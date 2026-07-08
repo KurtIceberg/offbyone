@@ -1,6 +1,8 @@
-# Auto Fullstack Agent
+# OffByOne Runtime
 
-A Node.js CLI that turns a prompt into a validated, runnable, and client-handoff-ready fullstack website project.
+**OffByOne is an agent-native website factory for turning prompts into validated, handoff-ready full-stack web projects.**
+
+It combines a Node.js CLI, MCP runtime, mock-safe automation, quality gates, and delivery packaging into one workflow — less “vibe-coded mystery box,” more reproducible product assembly line for AI-assisted builders.
 
 OffByOne v4 is now a complete deliverable website factory, and v5 adds the first Business Digital Organism layer. It supports:
 

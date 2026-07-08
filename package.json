@@ -1,7 +1,7 @@
 {
   "name": "offbyone-runtime",
   "version": "0.1.0",
-  "description": "Agent-native product build runtime for generating, validating, and packaging web projects.",
+  "description": "Agent-native Node.js CLI and MCP runtime for generating, validating, and packaging handoff-ready full-stack web projects.",
   "main": "src/index.js",
   "bin": {
     "offbyone": "src/cli.js",
