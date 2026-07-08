@@ -1,0 +1,4 @@
+/* Legacy stylesheet alias for older Workbench entry points.
+   The active Workbench uses /style.css; keep this file dark-console aligned
+   so deterministic checks or old pages do not regress to the former blue/light UI. */
+@import url('/style.css');

@@ -1,0 +1,11 @@
+=== Page:Home开始生成 ===
+export default function Home() {
+  return <section>Home</section>;
+}
+=== Page:Home结束生成 ===
+
+=== Component:[HeroCard]开始生成 ===
+export default function HeroCard() {
+  return <div>Hero</div>;
+}
+=== Component:[HeroCard]结束生成 ===

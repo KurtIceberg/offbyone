@@ -1,0 +1,13 @@
+=== Layout:[Layout.jsx]开始生成 ===
+```jsx
+export default function Layout({ children }) {
+  return <main>{children}</main>;
+}
+```
+=== Layout:[Layout.jsx]结束生成 ===
+
+=== Component:[Header]开始生成 ===
+export default function Header() {
+  return <header>Header</header>;
+}
+=== Component:[Header]结束生成 ===

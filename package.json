@@ -1,0 +1,50 @@
+{
+  "name": "offbyone-runtime",
+  "version": "0.1.0",
+  "description": "Agent-native product build runtime for generating, validating, and packaging web projects.",
+  "main": "src/index.js",
+  "bin": {
+    "offbyone": "src/cli.js",
+    "offbyone-runtime": "src/cli.js"
+  },
+  "scripts": {
+    "check": "node scripts/check.js",
+    "runtime-smoke": "node scripts/runtime-smoke.js",
+    "runtime-cli-smoke": "node scripts/runtime-cli-smoke.js",
+    "visual-check": "node src/cli.js visual-check",
+    "workbench-smoke": "node scripts/workbench-smoke.js",
+    "outputs-governance": "node scripts/outputs-governance.js",
+    "quality-regression": "node scripts/quality-regression-matrix.js",
+    "commercial-regression": "node scripts/commercial-readiness-regression.js",
+    "job-store-smoke": "node scripts/job-store-smoke.js",
+    "task-runner-smoke": "node scripts/task-runner-smoke.js",
+    "wod-prompt-alignment-smoke": "node scripts/wod-prompt-alignment-smoke.js",
+    "mcp-tools-smoke": "node scripts/mcp-tools-smoke.js",
+    "mcp-schema-smoke": "node scripts/mcp-schema-smoke.js",
+    "mcp-tools-docs": "node scripts/render-mcp-tools-docs.js",
+    "mcp-tools-docs-check": "node scripts/render-mcp-tools-docs.js --check",
+    "mcp-contract-closeout-smoke": "node scripts/mcp-contract-closeout-smoke.js",
+    "mcp-stability-smoke": "npm run mcp-tools-docs-check && npm run mcp-schema-smoke && npm run mcp-contract-closeout-smoke",
+    "mcp-server-smoke": "node scripts/mcp-server-smoke.js",
+    "mcp-agent-example-smoke": "node scripts/mcp-agent-example-smoke.js",
+    "job-controls-smoke": "node scripts/job-controls-smoke.js",
+    "runtime-job-smoke": "npm run job-store-smoke && npm run job-controls-smoke",
+    "top-level-runtime-cli-smoke": "node scripts/top-level-runtime-cli-smoke.js",
+    "real-model-preflight": "node scripts/real-model-preflight.js",
+    "offbyone-readiness-smoke": "node scripts/offbyone-readiness-smoke.js"
+  },
+  "keywords": [
+    "cli",
+    "agent",
+    "generator",
+    "llm"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "playwright": "^1.54.2"
+  }
+}

@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>offbyone v4.11 网站生成工作台</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main class="shell">
+    <aside class="console-rail" aria-label="Workbench navigation">
+      <div class="rail-logo"><strong>offbyone</strong><span>Workbench Console</span></div>
+      <p class="rail-section">Product flow</p>
+      <nav class="rail-nav">
+        <a class="active" href="#command-center">Command</a>
+        <a href="#job-form">Plan</a>
+        <a href="#acceptance-section">Acceptance</a>
+        <a href="#supervisor-panel">Review</a>
+        <a href="#project-center">Projects</a>
+        <a href="#logs-section">Logs</a>
+      </nav>
+      <div class="rail-footer">Dark local console · deterministic UI shell. API keys remain server-side.</div>
+    </aside>
+    <div class="workspace">
+    <header class="topbar" aria-label="OffByOne workspace navigation">
+      <div class="topbar-brand"><span class="brand-glyph">45</span><strong>OffByOne Workbench</strong></div>
+      <nav class="topbar-nav" aria-label="Primary navigation">
+        <a class="active" href="#command-center">Workbench</a>
+        <a href="#job-form">Templates</a>
+        <a href="#project-center">Imports</a>
+        <a href="#logs-section">Docs</a>
+      </nav>
+      <div class="topbar-actions"><span class="kbd">⌘K</span><button type="button" class="secondary compact-action">New site</button></div>
+    </header>
+    <section id="command-center" class="hero hero-grid">
+      <div>
+        <p class="eyebrow">AI Website Workbench</p>
+        <h1>What site are we building?</h1>
+        <p class="subhead">OffByOne plans the brief, pages, assets, and export path before generating your 1–3 page site.</p>
+        <ol class="journey" aria-label="产品构建旅程">
+          <li>Idea</li><li>Plan Mode</li><li>Site brief</li><li>Pages</li><li>Assets</li><li>Review</li><li>Export</li>
+        </ol>
+      </div>
+      <aside class="plan-preview-card" aria-label="Plan Mode preview">
+        <p class="eyebrow">Plan Mode Preview</p>
+        <h2>Quality-first build path</h2>
+        <ul>
+          <li>Structured site brief</li>
+          <li>1–3 page map</li>
+          <li>Asset and imagery strategy</li>
+          <li>Acceptance checklist</li>
+        </ul>
+      </aside>
+    </section>
+
+    <section class="panel config-panel">
+      <div class="section-head compact-head">
+        <div>
+          <p class="eyebrow">系统就绪状态</p>
+          <h2>可以开始生成真实网站</h2>
+        </div>
+        <div id="readiness" class="readiness muted">正在读取配置...</div>
+      </div>
+      <p class="muted">当前为真实大模型模式；模型连接由本地服务端检查，API Key 不会进入浏览器。</p>
+      <details class="advanced-settings">
+        <summary>高级系统设置 / 查看技术连接信息</summary>
+        <dl class="config-list">
+          <div><dt>模式</dt><dd id="cfg-mode">仅真实模式</dd></div>
+          <div><dt>Provider</dt><dd id="cfg-provider">-</dd></div>
+          <div><dt>Base URL</dt><dd id="cfg-base-url">-</dd></div>
+          <div><dt>模型</dt><dd id="cfg-model">-</dd></div>
+          <div><dt>密钥环境变量</dt><dd id="cfg-key-env">-</dd></div>
+          <div><dt>默认参数</dt><dd id="cfg-defaults">scaffold=true, force=true, maxPages=1</dd></div>
+          <div><dt>快速预览</dt><dd id="cfg-speed-mode">默认开启</dd></div>
+          <div><dt>生成策略</dt><dd id="cfg-preview-strategy">Speed Mode 默认草稿预览</dd></div>
+        </dl>
+      </details>
+    </section>
+
+    <section class="panel command-frame" aria-labelledby="generation-command-title">
+      <div class="command-frame-head">
+        <div>
+          <p class="eyebrow">Generation Command Center / 生成指挥中心</p>
+          <h2 id="generation-command-title">从 brief 到预览验收，一屏看清生成路径</h2>
+          <p class="muted">先写清网站目标，再用 Plan Mode 固化构建计划；右侧持续显示运行状态，后续质量证据会进入验收与监督面板。</p>
+        </div>
+        <span class="command-badge">Plan first · Quality controlled</span>
+      </div>
+      <div class="zone-map" aria-label="Workbench 三段式工作模型">
+        <article id="zone-build-brief" class="zone-card active-zone" data-zone-card="build-brief" aria-label="Build Brief active">
+          <span class="zone-index">01</span>
+          <strong>Build Brief / 构建输入</strong>
+          <p>输入网站目标、受众、页面、语气与参考资料；Plan Mode 是推荐第一步。</p>
+          <span class="zone-hint" data-zone-hint>Active · editing brief</span>
+        </article>
+        <article id="zone-run-state" class="zone-card" data-zone-card="run-state" aria-label="Run State waiting">
+          <span class="zone-index">02</span>
+          <strong>Run State / 运行状态</strong>
+          <p>查看当前阶段、进度、输出目录与预览是否准备好。</p>
+          <span class="zone-hint" data-zone-hint>Waiting for build</span>
+        </article>
+        <article id="zone-quality-evidence" class="zone-card" data-zone-card="quality-evidence" aria-label="Quality Evidence waiting">
+          <span class="zone-index">03</span>
+          <strong>Quality Evidence / 质量证据</strong>
+          <p>验收、监督、organism 与 quality contract 将在生成后汇总。</p>
+          <span class="zone-hint" data-zone-hint>Evidence after run</span>
+        </article>
+      </div>
+      <div class="milestone-gate-strip" aria-label="Milestone release gates">
+        <span>Gate path</span>
+        <strong>Plan → Build → Acceptance → Product Doctor v2 → Refine Plan v1 → Delivery Bundle</strong>
+        <em>发布候选以 release gate / readiness / bundle evidence 为准</em>
+      </div>
+    </section>
+
+    <section class="panel grid workbench-zones">
+      <form id="job-form" class="form build-brief-zone" aria-labelledby="build-brief-title">
+        <div class="zone-title-row">
+          <div>
+            <p class="eyebrow">Zone 01 · Build Brief</p>
+            <h2 id="build-brief-title">描述你要生成的网站 brief</h2>
+          </div>
+          <span class="zone-status-pill">Plan Mode 推荐开启</span>
+        </div>
+        <label>
+          <span>输入网站目标、受众、页面、内容与视觉参考</span>
+          <textarea name="prompt" rows="6">为一家 AI 咨询公司生成 3 页官网：首页、服务页、案例/联系页。视觉是 dark Linear / Hermes console，克制紫靛色强调。内容需要中英双语（中文优先，英文作为副标题或并列短句），面向企业 CEO/运营负责人，强调 AI workflow automation、agent implementation、ROI workshop、可信案例、预约咨询 CTA。图片需要与 AI 咨询、团队工作流、抽象智能系统相关，避免 generic app screenshots。</textarea>
+        </label>
+        <div class="composer-tools" aria-label="导入与输入工具">
+          <button type="button" class="tool-affordance" disabled>Upload brief / assets · soon</button>
+          <button type="button" class="tool-affordance" disabled>Import existing site · soon</button>
+          <button type="button" class="tool-affordance" disabled>Speech input · soon</button>
+        </div>
+
+        <div class="chip-group">
+          <p class="eyebrow">Website categories</p>
+          <div class="category-chips" aria-label="网站类型">
+            <button type="button" class="category-chip">SaaS Landing</button>
+            <button type="button" class="category-chip">AI Product Site</button>
+            <button type="button" class="category-chip">Personal Brand</button>
+            <button type="button" class="category-chip">Agency / Studio</button>
+            <button type="button" class="category-chip">Docs / Knowledge Base</button>
+            <button type="button" class="category-chip">Local Business</button>
+          </div>
+        </div>
+
+        <div class="chip-group">
+          <p class="eyebrow">Example briefs</p>
+          <div class="prompt-chips" aria-label="示例网站 brief">
+            <button type="button" class="prompt-chip" data-prompt="为一家 AI 咨询公司生成 3 页官网：首页、服务页、案例/联系页。视觉是 dark Linear / Hermes console，克制紫靛色强调。内容需要中英双语（中文优先，英文作为副标题或并列短句），面向企业 CEO/运营负责人，强调 AI workflow automation、agent implementation、ROI workshop、可信案例、预约咨询 CTA。图片需要与 AI 咨询、团队工作流、抽象智能系统相关，避免 generic app screenshots。">AI consulting · bilingual</button>
+            <button type="button" class="prompt-chip" data-prompt="Create a polished 3-page SaaS marketing site for a revenue intelligence product. Include a homepage, pricing page, and FAQ page with product-screenshot style visuals, feature workflows, integrations proof, security notes, pricing tiers, FAQ, and a clear Start trial / Book demo CTA. Keep the style dark, precise, and Linear-like with restrained indigo accents.">SaaS pricing + FAQ</button>
+            <button type="button" class="prompt-chip" data-prompt="Build a personal sovereign-individual portfolio site with 2–3 pages: home, essays, projects/newsletter. The tone should be thoughtful, independent, and high-signal. Include a manifesto hero, selected essays, project case studies, reading list, and newsletter CTA. Use editorial dark minimalism, no generic startup stock imagery.">Personal portfolio</button>
+            <button type="button" class="prompt-chip" data-prompt="Create a 3-page website for a local boutique interior studio: home, services/gallery, contact. Include service packages, project gallery, founder note, testimonials, contact form, and a map placeholder described as a future embedded map. Use warm dark luxury styling and prompt-relevant interior/project imagery, not unrelated stock photos.">Local boutique studio</button>
+          </div>
+        </div>
+
+        <section class="oracle-panel oracle-primary plan-first-panel" aria-label="Plan Mode 产品构建计划">
+          <div class="oracle-head">
+            <div>
+              <p class="eyebrow">推荐第一步 · Plan Mode / 构建计划</p>
+              <h3>先创建 site brief，再交给 OffByOne 生成页面</h3>
+              <p class="muted">Plan Mode 会整理项目名称、目标用户、语言策略、1–3 页页面列表、区块大纲、视觉方向、图片策略、CTA 与质量清单。</p>
+            </div>
+            <div class="plan-action-stack">
+              <label class="plan-mode-toggle"><input id="planMode" name="planMode" type="checkbox" checked><span>Plan Mode ON</span></label>
+              <span class="recommended-pill">Recommended / 质量优先</span>
+              <button id="oracle-button" type="button">Create build plan / site brief</button>
+            </div>
+          </div>
+          <div id="oracle-status" class="oracle-status idle">Plan Mode 默认开启：首次 Build 会先生成结构化 site brief；确认后再生成 1–3 页网站。需要跳过时可关闭 Plan Mode。</div>
+          <div id="oracle-brief" class="oracle-brief" hidden></div>
+        </section>
+
+        <div class="advanced-run-settings">
+          <details>
+            <summary>运行策略与输出设置 / Run options</summary>
+            <label class="speed-mode-toggle">
+              <input id="speedMode" name="speedMode" type="checkbox" checked>
+              <span><strong>快速预览模式（推荐）</strong><small>默认进入草稿预览：先生成 1 页可预览版本；超时更快进入恢复，减少等待感。</small></span>
+            </label>
+            <label class="strategy-control"><span>生成策略</span><select id="previewStrategy" name="previewStrategy"><option value="draft">草稿预览（最快）</option><option value="full">完整生成 / 精修</option></select><small class="muted">草稿预览用于快速看方向；完整生成 / 精修才作为最终交付前路径。</small></label>
+            <div class="row">
+              <label><span>输出标识</span><input name="outputSlug" value="real-smoke"></label>
+              <label><span>最大页面数</span><input name="maxPages" type="number" min="1" max="3" value="1"></label>
+            </div>
+          </details>
+          <details>
+            <summary>可选真实大模型参数（不会接收 API Key）</summary>
+            <div class="row">
+              <label><span>模型</span><input name="model" id="model" placeholder="LongCat-Flash-Chat"></label>
+              <label><span>超时时间 ms</span><input name="timeoutMs" type="number" min="1000" max="600000" step="1000" value="90000"></label>
+            </div>
+            <label><span>Base URL</span><input name="baseUrl" id="baseUrl" placeholder="https://api-xai.ainaibahub.com/v1"></label>
+            <div class="row">
+              <label><span>重试次数</span><input name="retries" type="number" min="0" max="5" value="0"></label>
+              <label><span>页面并发数</span><select name="pageConcurrency" id="pageConcurrency"><option value="1">1（安全串行）</option><option value="2">2（多页加速）</option></select></label>
+            </div>
+            <p class="muted">API Key 只从服务端环境变量读取，不会从此表单接收，也不会发送到浏览器。</p>
+          </details>
+        </div>
+        <button id="start-button" type="submit">Start build</button><p class="muted direct-build-note">Plan Mode 开启时会先停在 site brief 确认；关闭 Plan Mode 才会直接生成。</p>
+      </form>
+
+      <aside class="status-card status-rail" aria-labelledby="run-state-title">
+        <p class="eyebrow">Zone 02 · Run State</p>
+        <h2 id="run-state-title">任务状态 / Preview readiness</h2>
+        <ol class="run-stepper" aria-label="本地生成状态路径">
+          <li class="active">Idea</li>
+          <li>Plan</li>
+          <li>Build</li>
+          <li>Preview</li>
+          <li>Review</li>
+          <li>Deliver</li>
+        </ol>
+        <div id="status" class="status idle">空闲</div>
+        <dl>
+          <div><dt>任务</dt><dd id="job-id">-</dd></div>
+          <div><dt>阶段</dt><dd id="job-stage">-</dd></div>
+          <div><dt>进度</dt><dd id="job-progress">-</dd></div>
+          <div><dt>耗时</dt><dd id="job-elapsed">-</dd></div>
+          <div><dt>输出目录</dt><dd id="job-output">-</dd></div>
+          <div><dt>最新日志</dt><dd id="job-last-log">-</dd></div>
+        </dl>
+        <div class="actions run-controls">
+          <button id="job-cancel" type="button" class="secondary" disabled>取消任务</button>
+          <button id="job-events" type="button" class="secondary" disabled>查看 Runtime Events</button>
+        </div>
+      </aside>
+    </section>
+
+    <section class="panel preview-panel run-preview-panel" aria-labelledby="preview-title">
+      <p class="eyebrow">Zone 02 · Run State</p>
+      <h2 id="preview-title">生成预览 / Preview readiness</h2>
+      <div id="completion-banner" class="completion-banner" hidden></div>
+      <div id="preview" class="preview-card preview-pending">
+        <div><strong>暂无预览</strong><p>任务完成后必须生成 <code>dist/index.html</code> 或 <code>index.html</code> 才会开放预览。</p></div>
+        <button type="button" class="secondary" disabled>等待中</button>
+      </div>
+    </section>
+
+    <section id="acceptance-section" class="panel acceptance-panel quality-evidence-panel" aria-label="Project Acceptance 预览验收">
+      <div class="section-head compact-head">
+        <div>
+          <p class="eyebrow">Zone 03 · Quality Evidence / Project Acceptance / 预览验收</p>
+          <h2>预览是否真的可用</h2>
+          <p class="muted">验收、监督、organism/quality contract 会在这里形成可追踪证据：本地预览可打开、页面非空、路由安全、资源完整、无调试污染、商业验收与交付就绪。公网隧道是否稳定，不影响这里的本地项目健康判断。</p>
+        </div>
+        <button id="acceptance-refresh" type="button" class="secondary">检查最新项目</button>
+      </div>
+      <div class="evidence-grid" aria-label="质量证据槽位">
+        <div><strong>Acceptance</strong><span>预览健康与交付就绪</span></div>
+        <div><strong>Supervisor</strong><span>生成后质量审查</span></div>
+        <div><strong>Organism / Contract</strong><span>商业基因、实验计划、质量契约</span></div>
+      </div>
+      <div id="acceptance-panel" class="acceptance-card muted">正在等待最近项目；也可以在项目中心点击“预览验收”。</div>
+    </section>
+
+
+    <section id="supervisor-panel" class="panel supervisor-panel">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">offbyone v4.7.1 · Post-generation review</p>
+          <h2>生成后审查与优化</h2>
+          <p class="muted">生成完成后，先审查网站质量，再生成可控的修改建议。<small>适用于最近的 <code>generated/ui-*</code> 项目。</small></p>
+        </div>
+        <div id="supervisor-status" class="supervisor-status muted">等待选择项目。</div>
+      </div>
+      <div class="supervisor-toolbar">
+        <label><span>最近项目</span><select id="supervisor-project"><option value="">加载最近项目...</option></select></label>
+        <button id="run-supervisor" type="button">审查网站质量</button>
+        <button id="run-revision" type="button" class="secondary">生成修改建议</button>
+      </div>
+      <div class="supervisor-note muted">默认只生成修改建议，不直接覆盖源码。<small>技术策略：artifact-only；仅 API 显式传入 <code>applyNotes:true</code> 时才会写 notes 组件。</small></div>
+      <div class="supervisor-results">
+        <div id="supervisor-result" class="supervisor-result muted">尚未加载监督结果。</div>
+        <div id="revision-result" class="revision-result muted">尚未加载修订方案。</div>
+      </div>
+    </section>
+
+    <section id="studio-view" class="panel studio-panel" hidden>
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">offbyone v4.1 · Generated Site Studio</p>
+          <h2 id="studio-title">微调网站内容</h2>
+          <p id="studio-status" class="muted">在这里调整标题、按钮、图片、区块内容和联系方式；默认先保存草稿，不触发重新构建。</p>
+        </div>
+        <div class="actions">
+          <a id="studio-preview-link" class="button-link" target="_blank" rel="noopener noreferrer" href="#">打开完整预览</a>
+          <button id="studio-save" type="button">保存草稿</button>
+          <button id="studio-reset" type="button" class="secondary">重置草稿</button>
+        </div>
+      </div>
+      <div class="studio-grid">
+        <aside class="studio-sections">
+          <h3>页面区块</h3>
+          <div id="studio-sections" class="section-tabs"></div>
+        </aside>
+        <div class="studio-editor">
+          <h3>结构化编辑</h3>
+          <div id="studio-editor" class="studio-fields"></div>
+        </div>
+        <div class="studio-preview-stack">
+          <h3>即时草稿预览</h3>
+          <div id="studio-draft-preview"></div>
+          <h3>已构建网站 iframe</h3>
+          <iframe id="studio-iframe" title="生成网站预览" loading="lazy"></iframe>
+          <p class="muted">iframe 显示当前已构建网站；草稿修改会先在右侧预览卡片中即时生效，不触发 npm rebuild。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>结果 / 失败原因</h2>
+      <div id="result" class="result muted">启动一次真实生成来验证完整链路。仅打开控制台页面不代表生成成功。</div>
+    </section>
+
+    <section id="project-center" class="panel recent-panel">
+      <div class="section-head compact-head">
+        <div>
+          <p class="eyebrow">Recent sites / Projects</p>
+          <h2>最近生成的网站</h2>
+          <p class="muted">从这里继续预览、审查、微调或导出已经构建的 <code>generated/ui-*</code> 网站项目。</p>
+        </div>
+        <button id="clear-projects" type="button" class="secondary danger-button">清空项目中心</button>
+      </div>
+      <ul id="recent-projects" class="recent-projects"><li class="muted">加载中...</li></ul>
+    </section>
+
+    <section id="logs-section" class="panel">
+      <details class="logs-details">
+        <summary>查看技术日志</summary>
+        <pre id="logs" class="logs">暂无日志。</pre>
+      </details>
+    </section>
+    </div>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,1169 @@
+{
+  "version": "offbyone-mcp-tools-v1-safe-schemas",
+  "generatedFrom": "src/mcp/tools.js:listTools",
+  "realModelToolExposed": false,
+  "tools": [
+    {
+      "name": "offbyone_artifacts",
+      "title": "OffByOne artifact summary",
+      "description": "Read a sanitized artifact summary for a generated OffByOne output. Does not run generation or call models.",
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "output"
+        ],
+        "properties": {
+          "output": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Generated project output directory. Relative paths resolve from workspaceRoot and must stay under allowed runtime roots."
+          },
+          "skipValidation": {
+            "type": "boolean",
+            "description": "Skip validation while summarizing artifacts."
+          }
+        }
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "ok",
+          "tool",
+          "version"
+        ],
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "tool": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string",
+            "const": "offbyone-mcp-tools-v1-safe-schemas"
+          },
+          "artifactSummary": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "offbyone_delivery_bundle",
+      "title": "OffByOne delivery bundle",
+      "description": "Create a local client handoff delivery bundle from existing delivery/project-doctor evidence. Does not call models.",
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "output"
+        ],
+        "properties": {
+          "output": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Generated project output directory. Relative paths resolve from workspaceRoot and must stay under allowed runtime roots."
+          },
+          "projectName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "description": "Optional project name used in delivery/readiness artifacts."
+          }
+        }
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "ok",
+          "tool",
+          "version"
+        ],
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "tool": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string",
+            "const": "offbyone-mcp-tools-v1-safe-schemas"
+          },
+          "output": {
+            "type": "string"
+          },
+          "deliveryBundle": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "bundleDir": {
+            "type": "string"
+          },
+          "manifestPath": {
+            "type": "string"
+          },
+          "handoffPath": {
+            "type": "string"
+          },
+          "archivePath": {
+            "type": "string"
+          }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "offbyone_generate_mock",
+      "title": "OffByOne deterministic mock generation",
+      "description": "Run the deterministic local mock product-build task. This never enables real model execution.",
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "output"
+        ],
+        "properties": {
+          "output": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Generated project output directory. Relative paths resolve from workspaceRoot and must stay under allowed runtime roots."
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 12000,
+            "description": "Product/site prompt for local OffByOne planning or deterministic mock generation. Safe MCP tools do not call a real model."
+          },
+          "jobId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$",
+            "description": "OffByOne runtime job id."
+          },
+          "force": {
+            "type": "boolean",
+            "description": "Overwrite generated project files when supported. Defaults to true."
+          },
+          "forceJob": {
+            "type": "boolean",
+            "description": "Overwrite an existing job record with the same jobId. Defaults to true."
+          },
+          "quiet": {
+            "type": "boolean",
+            "description": "Suppress verbose workflow logs. Defaults to true."
+          },
+          "skipValidation": {
+            "type": "boolean",
+            "description": "Skip validation in the returned artifact summary."
+          },
+          "previewStrategy": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "full"
+            ],
+            "description": "Preview strategy passed to the runtime workflow."
+          }
+        }
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "ok",
+          "tool",
+          "version"
+        ],
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "tool": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string",
+            "const": "offbyone-mcp-tools-v1-safe-schemas"
+          },
+          "mode": {
+            "type": "string",
+            "const": "mock"
+          },
+          "output": {
+            "type": "string"
+          },
+          "artifactSummary": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "job": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true
+          }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "offbyone_job_cancel",
+      "title": "OffByOne job cancel request",
+      "description": "Request cancellation for a persisted local runtime job by writing a cancel marker. Does not interrupt external processes directly or call models.",
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "output",
+          "jobId"
+        ],
+        "properties": {
+          "output": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Generated project output directory. Relative paths resolve from workspaceRoot and must stay under allowed runtime roots."
+          },
+          "jobId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$",
+            "description": "OffByOne runtime job id."
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "description": "Operator-facing reason recorded on the job control event."
+          },
+          "requestedBy": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "description": "Actor recorded on the cancel marker. Defaults to mcp."
+          },
+          "force": {
+            "type": "boolean",
+            "description": "Allow recording a cancel marker for terminal jobs. Defaults to false."
+          }
+        }
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "ok",
+          "tool",
+          "version"
+        ],
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "tool": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string",
+            "const": "offbyone-mcp-tools-v1-safe-schemas"
+          },
+          "output": {
+            "type": "string"
+          },
+          "jobId": {
+            "type": "string"
+          },
+          "cancelMarker": {
+            "type": "string"
+          },
+          "job": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "offbyone_job_events",
+      "title": "OffByOne job events",
+      "description": "Read sanitized JSONL events for a OffByOne runtime job stored under the output .agent/jobs directory.",
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "output",
+          "jobId"
+        ],
+        "properties": {
+          "output": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Generated project output directory. Relative paths resolve from workspaceRoot and must stay under allowed runtime roots."
+          },
+          "jobId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$",
+            "description": "OffByOne runtime job id."
+          },
+          "after": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Return events after this zero-based line offset."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 500,
+            "description": "Maximum number of latest events to return from the selected window."
+          }
+        }
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "ok",
+          "tool",
+          "version"
+        ],
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "tool": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string",
+            "const": "offbyone-mcp-tools-v1-safe-schemas"
+          },
+          "output": {
+            "type": "string"
+          },
+          "jobId": {
+            "type": "string"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "offbyone_job_plan_resume",
+      "title": "OffByOne job resume plan",
+      "description": "Record resume intent and resume stage on a persisted local job. This is plan-only and never performs generation or model calls.",
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "output",
+          "jobId"
+        ],
+        "properties": {
+          "output": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Generated project output directory. Relative paths resolve from workspaceRoot and must stay under allowed runtime roots."
+          },
+          "jobId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$",
+            "description": "OffByOne runtime job id."
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "description": "Operator-facing reason recorded on the job control event."
+          },
+          "resumeJobId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$",
+            "description": "OffByOne runtime job id."
+          },
+          "resumeFromStage": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "description": "Stage from which an operator should resume after inspection."
+          },
+          "canResume": {
+            "type": "boolean",
+            "description": "Whether the planned resume remains allowed. Defaults to true."
+          }
+        }
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "ok",
+          "tool",
+          "version"
+        ],
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "tool": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string",
+            "const": "offbyone-mcp-tools-v1-safe-schemas"
+          },
+          "output": {
+            "type": "string"
+          },
+          "jobId": {
+            "type": "string"
+          },
+          "job": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "offbyone_job_plan_retry",
+      "title": "OffByOne job retry plan",
+      "description": "Record retry intent on a persisted local job. This is plan-only and never performs generation or model calls.",
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "output",
+          "jobId"
+        ],
+        "properties": {
+          "output": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Generated project output directory. Relative paths resolve from workspaceRoot and must stay under allowed runtime roots."
+          },
+          "jobId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$",
+            "description": "OffByOne runtime job id."
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "description": "Operator-facing reason recorded on the job control event."
+          },
+          "retryJobId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$",
+            "description": "OffByOne runtime job id."
+          },
+          "maxRetries": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20,
+            "description": "Maximum planned retry attempts to record."
+          },
+          "nextAttemptAt": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "description": "Optional operator-readable timestamp for the next attempt."
+          },
+          "canRetry": {
+            "type": "boolean",
+            "description": "Whether the planned retry remains allowed. Defaults to true."
+          }
+        }
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "ok",
+          "tool",
+          "version"
+        ],
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "tool": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string",
+            "const": "offbyone-mcp-tools-v1-safe-schemas"
+          },
+          "output": {
+            "type": "string"
+          },
+          "jobId": {
+            "type": "string"
+          },
+          "job": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "offbyone_job_progress",
+      "title": "OffByOne pollable job progress",
+      "description": "Read compact poll-friendly job progress plus recent events and the next event offset cursor.",
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "output",
+          "jobId"
+        ],
+        "properties": {
+          "output": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Generated project output directory. Relative paths resolve from workspaceRoot and must stay under allowed runtime roots."
+          },
+          "jobId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$",
+            "description": "OffByOne runtime job id."
+          },
+          "after": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Return progress events after this zero-based line offset cursor."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Maximum number of events to include. Defaults to 20."
+          }
+        }
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "ok",
+          "tool",
+          "version"
+        ],
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "tool": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string",
+            "const": "offbyone-mcp-tools-v1-safe-schemas"
+          },
+          "output": {
+            "type": "string"
+          },
+          "jobId": {
+            "type": "string"
+          },
+          "progress": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "offbyone_job_status",
+      "title": "OffByOne job status",
+      "description": "Read a sanitized status record for a OffByOne runtime job stored under the output .agent/jobs directory.",
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "output",
+          "jobId"
+        ],
+        "properties": {
+          "output": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Generated project output directory. Relative paths resolve from workspaceRoot and must stay under allowed runtime roots."
+          },
+          "jobId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$",
+            "description": "OffByOne runtime job id."
+          },
+          "summary": {
+            "type": "boolean",
+            "description": "Return a compact summary with recent events. Defaults to false."
+          },
+          "eventLimit": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Recent event count for summary mode. Defaults to the job store default."
+          }
+        }
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "ok",
+          "tool",
+          "version"
+        ],
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "tool": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string",
+            "const": "offbyone-mcp-tools-v1-safe-schemas"
+          },
+          "output": {
+            "type": "string"
+          },
+          "jobId": {
+            "type": "string"
+          },
+          "job": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true
+          }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "offbyone_oracle",
+      "title": "OffByOne Prompt Oracle plan",
+      "description": "Create a compact local Prompt Oracle brief from a raw business/site prompt. Optionally writes Oracle artifacts under the output .agent/oracle directory. Does not call models.",
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "prompt"
+        ],
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 12000,
+            "description": "Product/site prompt for local OffByOne planning or deterministic mock generation. Safe MCP tools do not call a real model."
+          },
+          "output": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Generated project output directory. Relative paths resolve from workspaceRoot and must stay under allowed runtime roots."
+          },
+          "pageCount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3,
+            "description": "Requested page count for Oracle planning. OffByOne keeps MCP-safe planning bounded to 1-3 pages."
+          },
+          "languagePreference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "description": "Optional operator language preference recorded in the Oracle response summary."
+          }
+        }
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "ok",
+          "tool",
+          "version"
+        ],
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "tool": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string",
+            "const": "offbyone-mcp-tools-v1-safe-schemas"
+          },
+          "output": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "brief": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "artifacts": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true
+          }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "offbyone_project_doctor",
+      "title": "OffByOne project doctor release gate",
+      "description": "Run the local Project Doctor release gate and return compact readiness, blocker, and report-path evidence. Does not call models.",
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "output"
+        ],
+        "properties": {
+          "output": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Generated project output directory. Relative paths resolve from workspaceRoot and must stay under allowed runtime roots."
+          },
+          "projectName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "description": "Optional project name used in delivery/readiness artifacts."
+          },
+          "frontendUrl": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "Optional public URL recorded in delivery/readiness artifacts. The MCP tool does not fetch it."
+          },
+          "backendUrl": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "Optional public URL recorded in delivery/readiness artifacts. The MCP tool does not fetch it."
+          }
+        }
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "ok",
+          "tool",
+          "version"
+        ],
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "tool": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string",
+            "const": "offbyone-mcp-tools-v1-safe-schemas"
+          },
+          "output": {
+            "type": "string"
+          },
+          "doctor": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "reportJson": {
+            "type": "string"
+          },
+          "reportMarkdown": {
+            "type": "string"
+          }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "offbyone_recent_projects",
+      "title": "OffByOne recent generated projects",
+      "description": "List compact Workbench-style summaries for recent generated ui-* projects under the local workspace generated directory. Does not run generation or call models.",
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [],
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 50,
+            "description": "Maximum number of recent generated projects to return."
+          }
+        }
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "ok",
+          "tool",
+          "version"
+        ],
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "tool": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string",
+            "const": "offbyone-mcp-tools-v1-safe-schemas"
+          },
+          "workspaceRoot": {
+            "type": "string"
+          },
+          "generatedRoot": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "projects": {
+            "type": "array"
+          }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "offbyone_refine_plan",
+      "title": "OffByOne refine plan",
+      "description": "Create an instruction-only local refine plan from an existing Project Doctor v2 report. Does not mutate generated source or call models.",
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "output"
+        ],
+        "properties": {
+          "output": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Generated project output directory. Relative paths resolve from workspaceRoot and must stay under allowed runtime roots."
+          },
+          "mutationPolicy": {
+            "type": "string",
+            "enum": [
+              "instruction-only"
+            ],
+            "description": "Refine-plan MCP mode is instruction-only and does not mutate generated source."
+          }
+        }
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "ok",
+          "tool",
+          "version"
+        ],
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "tool": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string",
+            "const": "offbyone-mcp-tools-v1-safe-schemas"
+          },
+          "output": {
+            "type": "string"
+          },
+          "refinePlan": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "reportJson": {
+            "type": "string"
+          },
+          "reportMarkdown": {
+            "type": "string"
+          }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "offbyone_status",
+      "title": "OffByOne output status",
+      "description": "Read validation status plus a compact artifact summary for a generated OffByOne output.",
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "output"
+        ],
+        "properties": {
+          "output": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Generated project output directory. Relative paths resolve from workspaceRoot and must stay under allowed runtime roots."
+          }
+        }
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "ok",
+          "tool",
+          "version"
+        ],
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "tool": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string",
+            "const": "offbyone-mcp-tools-v1-safe-schemas"
+          },
+          "output": {
+            "type": "string"
+          },
+          "status": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "artifactSummary": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "offbyone_validate",
+      "title": "OffByOne output validation",
+      "description": "Run the existing local validator against a generated OffByOne output. Does not run generation or call models.",
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "output"
+        ],
+        "properties": {
+          "output": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Generated project output directory. Relative paths resolve from workspaceRoot and must stay under allowed runtime roots."
+          }
+        }
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "ok",
+          "tool",
+          "version"
+        ],
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "tool": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string",
+            "const": "offbyone-mcp-tools-v1-safe-schemas"
+          },
+          "output": {
+            "type": "string"
+          },
+          "validation": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    }
+  ]
+}
