@@ -105,10 +105,36 @@ function readJsonFile(file) {
   return JSON.parse(fs.readFileSync(path.resolve(file), 'utf8'));
 }
 
-function resolveRunOracleBrief(args, sourcePrompt) {
+function readExistingStylePackId(output) {
+  if (!output) return '';
+  const root = path.resolve(output);
+  const candidates = [
+    path.join(root, '.agent', 'state', 'design-profile.json'),
+    path.join(root, '.agent', 'design', 'design-profile.json'),
+    path.join(root, '.agent', 'state', 'style-dna.json'),
+    path.join(root, '.agent', 'design', 'style-dna.json'),
+    path.join(root, '.agent', 'state', 'style-pack.json'),
+    path.join(root, '.agent', 'design', 'style-pack.json')
+  ];
+  for (const file of candidates) {
+    if (!fs.existsSync(file)) continue;
+    try {
+      const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+      const id = data.stylePackId || (data.styleDna && data.styleDna.id) || data.id;
+      if (id) return id;
+    } catch (_) {}
+  }
+  return '';
+}
+
+function resolveRunStylePackId(args) {
+  return args['style-pack'] || (args.resume ? readExistingStylePackId(args.output) : '');
+}
+
+function resolveRunOracleBrief(args, sourcePrompt, stylePackId) {
   if (args['oracle-brief-file']) return readJsonFile(args['oracle-brief-file']);
   if (!args['plan-mode']) return null;
-  return createOracleBrief(sourcePrompt, { pageCount: args['max-pages'], stylePackId: args['style-pack'] });
+  return createOracleBrief(sourcePrompt, { pageCount: args['max-pages'], stylePackId });
 }
 
 function resolveRunPrompt(args) {
@@ -210,7 +236,8 @@ async function main(argv = process.argv.slice(2)) {
   }
   if (command === 'run') {
     const sourcePrompt = resolveRunPrompt(args);
-    const oracleBrief = resolveRunOracleBrief(args, sourcePrompt);
+    const stylePackId = resolveRunStylePackId(args);
+    const oracleBrief = resolveRunOracleBrief(args, sourcePrompt, stylePackId);
     const workflowPrompt = oracleBrief ? (oracleBrief.offbyonePrompt || sourcePrompt) : sourcePrompt;
     if (oracleBrief && args.output) {
       writeOracleArtifacts(path.resolve(args.output), oracleBrief, { force: true });
@@ -265,7 +292,7 @@ async function main(argv = process.argv.slice(2)) {
       model: args.model,
       baseUrl: args['base-url'],
       apiKeyEnv: args['api-key-env'],
-      stylePackId: args['style-pack']
+      stylePackId
     });
     return 0;
   }

@@ -184,6 +184,14 @@ async function runChecks(options = {}) {
   assert.strictEqual(cliResumeExit, 0, 'resume CLI derives a prompt when --prompt is omitted');
   fs.rmSync(resumeRoot, { recursive: true, force: true });
 
+  const resumeStyleRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'offbyone-cli-resume-style-pack-check-'));
+  fs.rmSync(resumeStyleRoot, { recursive: true, force: true });
+  execFileSync(process.execPath, [path.resolve(__dirname, '..', 'src', 'cli.js'), 'run', '--prompt', 'Build a fintech trust dashboard for AI gateway operators', '--output', resumeStyleRoot, '--mock', '--force', '--style-pack', 'trust-data-infrastructure', '--max-pages', '1', '--stages', 'plan,layout'], { encoding: 'utf8', stdio: 'pipe' });
+  execFileSync(process.execPath, [path.resolve(__dirname, '..', 'src', 'cli.js'), 'run', '--prompt', 'Build an AI SaaS page', '--output', resumeStyleRoot, '--mock', '--resume', '--skip-existing', '--stages', 'pages', '--only-pages', 'Home'], { encoding: 'utf8', stdio: 'pipe' });
+  const resumedStyleProfile = JSON.parse(fs.readFileSync(path.join(resumeStyleRoot, '.agent', 'design', 'design-profile.json'), 'utf8'));
+  assert.strictEqual(resumedStyleProfile.stylePackId, 'trust-data-infrastructure', 'resume CLI preserves the existing Design DNA style pack when --style-pack is omitted');
+  fs.rmSync(resumeStyleRoot, { recursive: true, force: true });
+
   const servicePrompt = 'Build a 3-page AI consulting website for enterprise automation. Avoid generic app screenshots and dashboard mockups; use strategic service visuals.';
   const serviceProfile = createDesignProfile({ prompt: servicePrompt, oracleBrief: createOracleBrief(servicePrompt, { pageCount: 3 }) });
   assert.strictEqual(serviceProfile.siteType, 'service-site', 'service imagery constraint routes to service-site');
