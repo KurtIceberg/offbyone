@@ -1,7 +1,21 @@
-const MAX_GUIDANCE_CHARS = 5200;
+const MAX_GUIDANCE_CHARS = 6800;
 
 const DESIGN_SKILL_VERSION = 'professional-ui-app-ppt-design@1.0.0';
 const TASTE_GUIDANCE_VERSION = 'offbyone-local-taste-guidance@1.0.0';
+
+function unique(items, limit) {
+  const out = [];
+  const seen = new Set();
+  for (const item of items || []) {
+    const value = String(item || '').trim();
+    const key = value.toLowerCase();
+    if (!value || seen.has(key)) continue;
+    seen.add(key);
+    out.push(value);
+    if (limit && out.length >= limit) break;
+  }
+  return out;
+}
 
 const FAMILY_GUIDANCE = {
   'premium-consumer': {
@@ -128,26 +142,50 @@ const FAMILY_GUIDANCE = {
 function createProfessionalDesignGuidance(profile = {}) {
   const key = profile.siteType && FAMILY_GUIDANCE[profile.siteType] ? profile.siteType : 'general-business';
   const guidance = FAMILY_GUIDANCE[key];
+  const styleDna = profile.styleDna || null;
+  const stylePack = profile.stylePack || (styleDna && styleDna.stylePack) || null;
   const tasteGuidance = createTasteGuidance(profile, guidance);
+  const referenceSystems = unique([...(guidance.referenceSystems || []), ...((styleDna && styleDna.sourceReferences) || [])], 9);
+  const designDNA = stylePack && Array.isArray(stylePack.designDNA) ? stylePack.designDNA : [];
+  const styleLayoutMoves = stylePack && Array.isArray(stylePack.layoutMoves) ? stylePack.layoutMoves : [];
+  const styleComponentMoves = stylePack && Array.isArray(stylePack.componentMoves) ? stylePack.componentMoves : [];
+  const visualAssetDirectives = stylePack && Array.isArray(stylePack.visualAssetDirectives) ? stylePack.visualAssetDirectives : [];
+  const styleQaSignals = stylePack && Array.isArray(stylePack.qaSignals) ? stylePack.qaSignals : ((styleDna && styleDna.qaFocus) || []);
+  const styleAvoid = stylePack && Array.isArray(stylePack.avoid) ? stylePack.avoid : ((styleDna && styleDna.antiPatterns) || []);
+  const nonInfringementBoundary = (stylePack && stylePack.nonInfringementBoundary) || (styleDna && styleDna.cloneBoundary) || 'Use references as professional layout vocabulary only; never copy brand identity, logos, exact assets, copy, or page structure.';
+  const qaFocus = unique([...(guidance.qaFocus || []), ...styleQaSignals], 10);
   return {
     sourceSkill: DESIGN_SKILL_VERSION,
     tasteGuidanceSource: TASTE_GUIDANCE_VERSION,
+    styleDnaVersion: (styleDna && styleDna.version) || profile.stylePackVersion,
+    stylePackVersion: profile.stylePackVersion || (styleDna && styleDna.version),
+    stylePackId: (stylePack && stylePack.id) || (styleDna && styleDna.id),
+    stylePackLabel: (stylePack && stylePack.label) || (styleDna && styleDna.label),
+    stylePackSource: (stylePack && stylePack.source) || (styleDna && styleDna.source),
+    stylePackRead: stylePack ? 'Design DNA pack `' + stylePack.id + '` (' + stylePack.label + ') for ' + guidance.artifactType + ': ' + designDNA.join(' ') : '',
+    designDNA,
+    stylePackLayoutMoves: styleLayoutMoves,
+    stylePackComponentMoves: styleComponentMoves,
+    visualAssetDirectives,
+    stylePackQaSignals: styleQaSignals,
+    stylePackAvoid: styleAvoid,
+    nonInfringementBoundary,
     artifactType: guidance.artifactType,
     audienceFocus: guidance.audienceFocus,
     businessGoal: guidance.businessGoal,
-    designReferenceFamily: guidance.referenceSystems.slice(),
+    designReferenceFamily: referenceSystems,
     layoutPattern: profile.layoutPattern || '',
-    visualSystem: guidance.visualSystem,
+    visualSystem: [guidance.visualSystem, designDNA.length ? 'Design DNA: ' + designDNA.join(' ') : (styleDna && styleDna.summary ? 'Design DNA: ' + styleDna.summary : '')].filter(Boolean).join(' '),
     designRead: tasteGuidance.designRead,
     tasteDials: tasteGuidance.dials,
     compositionAlternatives: tasteGuidance.compositionAlternatives,
     antiSlopRules: tasteGuidance.antiSlopRules,
     tasteQaDirectives: tasteGuidance.qaDirectives,
-    layoutDirectives: guidance.layoutDirectives.slice(),
-    componentDirectives: guidance.componentDirectives.slice(),
-    qaFocus: guidance.qaFocus.slice(),
-    operatingRule: 'artifact type -> audience -> business goal -> design reference family -> layout pattern -> visual system -> QA method',
-    cloneBoundary: 'Use references as professional layout vocabulary only; never copy brand identity, logos, exact assets, copy, or page structure.'
+    layoutDirectives: unique([...(guidance.layoutDirectives || []), ...styleLayoutMoves, ...((styleDna && styleDna.componentGuidance) || [])], 10),
+    componentDirectives: unique([...(guidance.componentDirectives || []), ...styleComponentMoves], 10),
+    qaFocus,
+    operatingRule: 'artifact type -> audience -> business goal -> design reference family -> style DNA -> layout pattern -> visual system -> QA method',
+    cloneBoundary: nonInfringementBoundary
   };
 }
 
@@ -208,8 +246,29 @@ function renderProfessionalDesignGuidanceMarkdown(guidance = {}) {
     '- Audience focus: ' + (guidance.audienceFocus || ''),
     '- Business goal: ' + (guidance.businessGoal || ''),
     '- Design references: `' + (Array.isArray(guidance.designReferenceFamily) ? guidance.designReferenceFamily.join(', ') : '') + '`',
+    guidance.stylePackId ? '- Style DNA: `' + guidance.stylePackId + '`' + (guidance.stylePackLabel ? ' — ' + guidance.stylePackLabel : '') : '',
+    guidance.stylePackSource ? '- Style pack source: `' + guidance.stylePackSource + '`' : '',
     '- Layout pattern: `' + (guidance.layoutPattern || '') + '`',
     '- Visual system: ' + (guidance.visualSystem || ''),
+    guidance.stylePackRead ? '- Style pack read: ' + guidance.stylePackRead : '',
+    '',
+    '## Design DNA Style Pack',
+    renderList(guidance.designDNA),
+    '',
+    '## Style Pack Layout Moves',
+    renderList(guidance.stylePackLayoutMoves),
+    '',
+    '## Style Pack Component Moves',
+    renderList(guidance.stylePackComponentMoves),
+    '',
+    '## Style Pack Visual Asset Directives',
+    renderList(guidance.visualAssetDirectives),
+    '',
+    '## Style Pack QA Signals',
+    renderList(guidance.stylePackQaSignals),
+    '',
+    '## Style Pack Avoid',
+    renderList(guidance.stylePackAvoid),
     '',
     '## Design Read / Taste Dials',
     '- Design read: ' + (guidance.designRead || ''),
@@ -233,6 +292,9 @@ function renderProfessionalDesignGuidanceMarkdown(guidance = {}) {
     '',
     '## Clone boundary',
     guidance.cloneBoundary || '',
+    '',
+    '## Non-infringement boundary',
+    guidance.nonInfringementBoundary || guidance.cloneBoundary || '',
     ''
   ];
   return compactText(lines.join('\n'), MAX_GUIDANCE_CHARS);

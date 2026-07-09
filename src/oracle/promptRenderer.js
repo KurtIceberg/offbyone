@@ -11,6 +11,7 @@ function renderOracleMarkdown(brief) {
   const generationStrategy = brief.generationStrategy || {};
   const sitePlan = brief.sitePlan || {};
   const qualityProfile = brief.qualityProfile || generationStrategy.qualityProfile || {};
+  const styleDna = brief.styleDna || generationStrategy.styleDna || {};
   const expectationLift = brief.expectationLift || {};
   const industryPlaybook = brief.industryPlaybook || {};
   const designRead = createOracleDesignRead(brief, qualityProfile);
@@ -66,6 +67,13 @@ function renderOracleMarkdown(brief) {
     '- Avoid: ' + brief.visualDirection.avoid.join(', '),
     '- Image needs: ' + brief.visualDirection.imageNeeds.join(', '),
     '',
+    '## Style DNA / 风格 DNA',
+    '- Pack: ' + ([styleDna.id, styleDna.label].filter(Boolean).join(' / ') || '-'),
+    '- Sources: ' + ((styleDna.sourceReferences || []).join(', ') || '-'),
+    '- Summary: ' + (styleDna.summary || '-'),
+    '- QA focus: ' + ((styleDna.qaFocus || []).join(', ') || '-'),
+    '- Clone boundary: ' + (styleDna.cloneBoundary || '-'),
+    '',
     '## Design Read / Taste Guidance',
     '- ' + designRead,
     '- Anti-slop: avoid default left-text/right-image hero unless justified; avoid template smell, generic AI gradients, random icon grids, placeholder visuals, scaffold/API/debug copy.',
@@ -111,6 +119,7 @@ function renderOffByOnePrompt(brief) {
   const generationStrategy = brief.generationStrategy || {};
   const sitePlan = brief.sitePlan || {};
   const qualityProfile = brief.qualityProfile || generationStrategy.qualityProfile || {};
+  const styleDna = brief.styleDna || generationStrategy.styleDna || {};
   const expectationLift = brief.expectationLift || {};
   const industryPlaybook = brief.industryPlaybook || {};
   const designRead = createOracleDesignRead(brief, qualityProfile);
@@ -167,6 +176,8 @@ function renderOffByOnePrompt(brief) {
     '- Positioning: ' + brief.contentStrategy.positioning,
     '- Tone: ' + brief.contentStrategy.tone,
     '- Visual style: ' + brief.visualDirection.styleKeywords.join(', '),
+    '- Style DNA: ' + ([styleDna.id, styleDna.label].filter(Boolean).join(' / ') || '-') + '；sources: ' + ((styleDna.sourceReferences || []).join(', ') || '-') + '；QA: ' + ((styleDna.qaFocus || []).slice(0, 4).join(' / ') || '-'),
+    '- Style clone boundary: ' + (styleDna.cloneBoundary || 'Use references as vocabulary only; do not clone brand identity.'),
     '- Image needs: ' + brief.visualDirection.imageNeeds.join(', '),
     '- Design Read / Taste Guidance: ' + designRead,
     '- Anti-slop taste rules: do not default to left-text/right-image hero unless justified; avoid template smell, generic AI gradients, random icon grids/Visual cards, placeholder visuals, scaffold/API/debug copy, and off-topic stock imagery.',
@@ -210,7 +221,8 @@ function createOracleDesignRead(brief, qualityProfile) {
     : (sitePlan.pages && sitePlan.pages.length > 1 ? 'multi-page commercial website' : 'commercial landing page');
   const audience = productLogic.targetAudience || brief.intent && brief.intent.targetAudience || 'target buyers';
   const siteType = understanding.siteType || brief.intent && brief.intent.siteType || qualityProfile.id || 'business site';
-  const vibe = [qualityProfile.label, (visualDirection.styleKeywords || []).slice(0, 3).join(' / ')].filter(Boolean).join(' with ') || 'specific brand-led visual language';
+  const styleDna = brief.styleDna || (brief.generationStrategy && brief.generationStrategy.styleDna) || {};
+  const vibe = [styleDna.label, qualityProfile.label, (visualDirection.styleKeywords || []).slice(0, 3).join(' / ')].filter(Boolean).join(' with ') || 'specific brand-led visual language';
   return 'Reading this as: ' + pageKind + ' for ' + audience + ', in the ' + siteType + ' category, with ' + vibe + '. Use this read to choose composition, typography, motion, density, and prompt-relevant imagery before generating UI.';
 }
 

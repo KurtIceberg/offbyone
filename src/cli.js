@@ -31,10 +31,10 @@ function usage() {
   return [
     'Usage:',
     '  node src/cli.js init --output ./generated/my-project [--force]',
-    '  node src/cli.js run --prompt "Build a site" --output ./generated/my-project [--prompt-file FILE] [--plan-mode] [--oracle-brief-file FILE] [--mock] [--force] [--resume] [--skip-existing] [--page-recovery-mode] [--db-local-plan] [--plan-local-plan] [--backend-local-plan] [--app-local-plan] [--page-fast-fail-retries N] [--max-pages N] [--page-concurrency N] [--preview-strategy draft|full] [--only-pages Home,Craft] [--stages list] [--provider ID] [--model MODEL] [--base-url URL] [--api-key-env ENV_NAME] [--timeout-ms N] [--retries N] [--retry-delay-ms N] [--scaffold] [--no-preflight]',
+    '  node src/cli.js run --prompt "Build a site" --output ./generated/my-project [--prompt-file FILE] [--plan-mode] [--oracle-brief-file FILE] [--style-pack ID] [--mock] [--force] [--resume] [--skip-existing] [--page-recovery-mode] [--db-local-plan] [--plan-local-plan] [--backend-local-plan] [--app-local-plan] [--page-fast-fail-retries N] [--max-pages N] [--page-concurrency N] [--preview-strategy draft|full] [--only-pages Home,Craft] [--stages list] [--provider ID] [--model MODEL] [--base-url URL] [--api-key-env ENV_NAME] [--timeout-ms N] [--retries N] [--retry-delay-ms N] [--scaffold] [--no-preflight]',
     '  node src/cli.js ui [--port N] [--host HOST]',
-    '  node src/cli.js oracle --prompt "..." --output ./generated/site [--force]',
-    '  node src/cli.js visual-assets --prompt "..." --output ./generated/site [--force]',
+    '  node src/cli.js oracle --prompt "..." --output ./generated/site [--style-pack ID] [--force]',
+    '  node src/cli.js visual-assets --prompt "..." --output ./generated/site [--style-pack ID] [--force]',
     '  node src/cli.js supervise --output ./generated/site',
     '  node src/cli.js revise --output ./generated/site [--mock] [--force] [--apply-notes]',
     '  node src/cli.js status --output ./generated/my-project',
@@ -59,6 +59,7 @@ function usage() {
     '  --prompt-file FILE Read UTF-8 prompt text from FILE; preferred over --prompt',
     '  --plan-mode       Create a structured Oracle brief before generation and let its 1-6 page plan drive workflow pages',
     '  --oracle-brief-file FILE Use an existing Oracle brief JSON; its sitePlan.pages drive workflow pages',
+    '  --style-pack ID   Force a local Design DNA style pack: precision-product-system, editorial-craft-gallery, trust-data-infrastructure, warm-marketplace-service, or reading-knowledge-system',
     '  --resume          Reuse OUTPUT/.agent/state/<stage>.md instead of calling the LLM when present',
     '  --skip-existing   Do not overwrite existing generated files; page calls can be skipped when state+files exist',
     '  --only-pages list  Generate only named pages after --max-pages; accepts component names or file names',
@@ -107,7 +108,7 @@ function readJsonFile(file) {
 function resolveRunOracleBrief(args, sourcePrompt) {
   if (args['oracle-brief-file']) return readJsonFile(args['oracle-brief-file']);
   if (!args['plan-mode']) return null;
-  return createOracleBrief(sourcePrompt, { pageCount: args['max-pages'] });
+  return createOracleBrief(sourcePrompt, { pageCount: args['max-pages'], stylePackId: args['style-pack'] });
 }
 
 function resolveRunPrompt(args) {
@@ -159,7 +160,7 @@ async function main(argv = process.argv.slice(2)) {
     return 0;
   }
   if (command === 'oracle') {
-    const result = runPromptOracle({ prompt: args.prompt, output: args.output, force: Boolean(args.force) });
+    const result = runPromptOracle({ prompt: args.prompt, output: args.output, force: Boolean(args.force), stylePackId: args['style-pack'] });
     console.log(result.summary);
     console.log('Brief JSON: ' + result.briefPath);
     console.log('Brief Markdown: ' + result.markdownPath);
@@ -172,7 +173,7 @@ async function main(argv = process.argv.slice(2)) {
     if (!args.output) throw new Error('--output is required');
     const output = path.resolve(args.output);
     const oracleBrief = args['oracle-brief-file'] ? readJsonFile(args['oracle-brief-file']) : null;
-    const designProfile = createDesignProfile({ prompt: args.prompt, oracleBrief });
+    const designProfile = createDesignProfile({ prompt: args.prompt, oracleBrief, stylePackId: args['style-pack'] });
     const plan = createVisualAssetPlan({ prompt: args.prompt, oracleBrief, designProfile });
     const artifacts = writeVisualAssetPlanArtifacts(output, plan, { force: true });
     console.log('Visual Asset Pipeline plan: ' + plan.siteType + ' / assets=' + plan.assets.length);
@@ -263,7 +264,8 @@ async function main(argv = process.argv.slice(2)) {
       provider: args.provider,
       model: args.model,
       baseUrl: args['base-url'],
-      apiKeyEnv: args['api-key-env']
+      apiKeyEnv: args['api-key-env'],
+      stylePackId: args['style-pack']
     });
     return 0;
   }

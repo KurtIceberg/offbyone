@@ -6,6 +6,7 @@ const { writeOracleArtifacts } = require('./artifacts');
 const { createUnderstanding, createProductLogic, createEditableFields } = require('./reasoning');
 const { createContentPlan } = require('./sectionPlanner');
 const { createQualityProfile, QUALITY_PROFILE_VERSION } = require('../quality');
+const { createStyleDna, STYLE_DNA_VERSION } = require('../design/stylePacks');
 const { scoreIntentConfidence } = require('./confidence');
 const { createIndustryPlaybook, renderIndustryPlaybookMarkdown, inferRequestedPageCount, INDUSTRY_PLAYBOOK_VERSION } = require('./industryPlaybook');
 
@@ -22,6 +23,7 @@ function createOracleBrief(sourcePrompt, options = {}) {
   const sitePlan = createSitePlan(prompt, siteType, d, contentPlan, requestedPageCount, industryPlaybook);
   const expectationLift = createExpectationLift(prompt, siteType, d, sitePlan, industryPlaybook);
   const qualityProfile = createQualityProfile({ prompt, oracleBrief: { intent: { siteType }, contentStrategy: { positioning: d.positioning }, visualDirection: { styleKeywords: d.style, imageNeeds: d.images } } });
+  const styleDna = createStyleDna({ prompt, siteType, qualityProfileId: qualityProfile.id, stylePackId: options.stylePackId || options.styleDnaId || options.designStylePackId });
   const acceptanceCriteria = siteType === 'workflow-app'
     ? [
       '界面内容必须围绕用户原始工作流，而不是品牌官网或泛型 SaaS 模板',
@@ -50,6 +52,16 @@ function createOracleBrief(sourcePrompt, options = {}) {
       reviewFocus: qualityProfile.reviewFocus.slice(0, 5)
     },
     qualityProfileId: qualityProfile.id,
+    styleDna: {
+      version: STYLE_DNA_VERSION,
+      id: styleDna.id,
+      label: styleDna.label,
+      sourceReferences: styleDna.sourceReferences.slice(0, 5),
+      summary: styleDna.summary,
+      qaFocus: styleDna.qaFocus.slice(0, 5),
+      cloneBoundary: styleDna.cloneBoundary
+    },
+    stylePackId: styleDna.id,
     offbyoneInstructionFocus: unique(siteType === 'workflow-app'
       ? [
         '先按系统理解和产品逻辑组织工作流界面',
@@ -78,6 +90,7 @@ function createOracleBrief(sourcePrompt, options = {}) {
     productLogic,
     expectationLift,
     industryPlaybook,
+    styleDna: generationStrategy.styleDna,
     sitePlan,
     contentStrategy: {
       positioning: d.positioning,
@@ -86,9 +99,9 @@ function createOracleBrief(sourcePrompt, options = {}) {
     },
     contentPlan,
     visualDirection: {
-      styleKeywords: unique(d.style),
-      avoid: ['childish', 'generic template', 'low-end discount style'],
-      imageNeeds: unique(d.images)
+      styleKeywords: unique([...(d.style || []), styleDna.id, styleDna.label]),
+      avoid: unique(['childish', 'generic template', 'low-end discount style', ...((styleDna && styleDna.antiPatterns) || []).slice(0, 3)]),
+      imageNeeds: unique([...(d.images || []), styleDna.imageStrategy].filter(Boolean))
     },
     dataAndBackend: {
       entities: unique([...(d.entities || []), ...((industryPlaybook && industryPlaybook.dataEntities) || [])]),

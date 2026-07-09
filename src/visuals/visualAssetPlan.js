@@ -71,9 +71,14 @@ function inferVisualRequirements(subject, siteType, style, designSignals) {
   const text = normalizeText([subject, siteType, style && style.siteType, ...(designSignals || [])].filter(Boolean).join(' '));
   const requirements = {
     semantics: uniqueStrings([subject, siteType, style && style.qualityProfileId, ...(designSignals || [])], 10),
+    stylePackId: style && style.stylePackId || '',
+    stylePackLabel: style && style.stylePackLabel || '',
+    stylePackQaSignals: style && Array.isArray(style.stylePackQaSignals) ? style.stylePackQaSignals.slice(0, 5) : [],
+    stylePackVisualAssetDirectives: style && Array.isArray(style.stylePackVisualAssetDirectives) ? style.stylePackVisualAssetDirectives.slice(0, 5) : [],
+    nonInfringementBoundary: style && style.nonInfringementBoundary || '',
     subjects: [],
     scenes: [],
-    avoid: ['generic abstract gradients without business meaning', 'fake logos or unverifiable partner claims', 'provider/debug/scaffold language in customer-facing imagery'],
+    avoid: uniqueStrings(['generic abstract gradients without business meaning', 'fake logos or unverifiable partner claims', 'provider/debug/scaffold language in customer-facing imagery', ...(style && Array.isArray(style.stylePackAvoid) ? style.stylePackAvoid : [])], 12),
     qualityBar: 'Every visual slot must make the business offer, audience, or proof more concrete; decorative filler is not sufficient.'
   };
   if (/creator|gamer|anime|late-night|energy|subscription|box/.test(text)) {
@@ -120,9 +125,18 @@ function sanitizeProviderLanguage(value) {
 
 function inferVisualStyle(designProfile) {
   const profile = designProfile || {};
+  const stylePack = profile.stylePack || (profile.styleDna && profile.styleDna.stylePack) || null;
   return {
     source: 'design-profile',
     siteType: profile.siteType || 'unknown',
+    stylePackId: profile.stylePackId || (profile.styleDna && profile.styleDna.id) || '',
+    stylePackLabel: (stylePack && stylePack.label) || (profile.styleDna && profile.styleDna.label) || '',
+    stylePackSource: (stylePack && stylePack.source) || (profile.styleDna && profile.styleDna.source) || '',
+    stylePackDesignDNA: stylePack && Array.isArray(stylePack.designDNA) ? stylePack.designDNA.slice(0, 5) : [],
+    stylePackVisualAssetDirectives: stylePack && Array.isArray(stylePack.visualAssetDirectives) ? stylePack.visualAssetDirectives.slice(0, 5) : [],
+    stylePackQaSignals: stylePack && Array.isArray(stylePack.qaSignals) ? stylePack.qaSignals.slice(0, 5) : [],
+    stylePackAvoid: stylePack && Array.isArray(stylePack.avoid) ? stylePack.avoid.slice(0, 6) : [],
+    nonInfringementBoundary: (stylePack && stylePack.nonInfringementBoundary) || (profile.styleDna && profile.styleDna.cloneBoundary) || '',
     referenceFamily: Array.isArray(profile.referenceFamily) ? profile.referenceFamily.slice(0, 5) : [],
     density: profile.density || 'medium',
     visualThesis: sanitizeProviderLanguage(profile.visualThesis),
@@ -136,17 +150,24 @@ function inferVisualStyle(designProfile) {
 function baseSignals(designProfile) {
   const profile = designProfile || {};
   const quality = profile.qualityProfile || {};
+  const stylePack = profile.stylePack || (profile.styleDna && profile.styleDna.stylePack) || {};
   return uniqueStrings([
     profile.siteType,
+    profile.stylePackId,
+    profile.styleDna && profile.styleDna.label,
+    stylePack.label,
     profile.layoutPattern,
     sanitizeProviderLanguage(profile.imageStrategy),
     sanitizeProviderLanguage(profile.visualThesis),
     profile.density ? 'density:' + profile.density : '',
     ...(Array.isArray(profile.referenceFamily) ? profile.referenceFamily : []),
     ...(Array.isArray(profile.matchedSignals) ? profile.matchedSignals : []),
+    ...(Array.isArray(stylePack.designDNA) ? stylePack.designDNA : []),
+    ...(Array.isArray(stylePack.qaSignals) ? stylePack.qaSignals : []),
+    ...(Array.isArray(stylePack.visualAssetDirectives) ? stylePack.visualAssetDirectives : []),
     ...(Array.isArray(quality.visualSemantics) ? quality.visualSemantics : []),
     ...(Array.isArray(quality.reviewFocus) ? quality.reviewFocus : [])
-  ], 12);
+  ], 18);
 }
 
 const SLOT_GROUPS = {
@@ -272,6 +293,8 @@ function createVisualAssetManifest(plan = {}) {
     eyebrow: 'Local visual assets',
     qualityProfileId: plan.visualStyle && plan.visualStyle.qualityProfileId || '',
     visualStyle: plan.visualStyle || {},
+    stylePackId: plan.visualStyle && plan.visualStyle.stylePackId || '',
+    stylePackLabel: plan.visualStyle && plan.visualStyle.stylePackLabel || '',
     visualRequirements: plan.visualRequirements || {},
     profileVisualSemantics: plan.visualRequirements && Array.isArray(plan.visualRequirements.semantics) ? plan.visualRequirements.semantics : [],
     imageKeywords: plan.visualRequirements && Array.isArray(plan.visualRequirements.semantics) ? plan.visualRequirements.semantics : [],
@@ -537,11 +560,22 @@ function renderVisualAssetPlanMarkdown(plan = {}) {
     '## Visual Style',
     '',
     '- Design site type: `' + ((plan.visualStyle && plan.visualStyle.siteType) || 'unknown') + '`',
+    '- Design DNA style pack: `' + ((plan.visualStyle && plan.visualStyle.stylePackId) || '') + '`' + (plan.visualStyle && plan.visualStyle.stylePackLabel ? ' — ' + plan.visualStyle.stylePackLabel : ''),
     '- Quality profile: `' + ((plan.visualStyle && plan.visualStyle.qualityProfileId) || '') + '`',
     '- Reference family: `' + (plan.visualStyle && Array.isArray(plan.visualStyle.referenceFamily) ? plan.visualStyle.referenceFamily.join(', ') : '') + '`',
     '- Density: `' + ((plan.visualStyle && plan.visualStyle.density) || '') + '`',
     plan.visualStyle && plan.visualStyle.visualThesis ? '- Visual thesis: ' + plan.visualStyle.visualThesis : '',
     plan.visualStyle && plan.visualStyle.imageStrategy ? '- Image strategy: ' + plan.visualStyle.imageStrategy : '',
+    '',
+    '## Design DNA Visual Directives',
+    '',
+    ...((plan.visualRequirements && Array.isArray(plan.visualRequirements.stylePackVisualAssetDirectives) && plan.visualRequirements.stylePackVisualAssetDirectives.length) ? plan.visualRequirements.stylePackVisualAssetDirectives.map((item) => '- ' + item) : ['- None']),
+    '',
+    '## Style Pack QA Signals',
+    '',
+    ...((plan.visualRequirements && Array.isArray(plan.visualRequirements.stylePackQaSignals) && plan.visualRequirements.stylePackQaSignals.length) ? plan.visualRequirements.stylePackQaSignals.map((item) => '- ' + item) : ['- None']),
+    '',
+    plan.visualRequirements && plan.visualRequirements.nonInfringementBoundary ? 'Non-infringement boundary: ' + plan.visualRequirements.nonInfringementBoundary : '',
     '',
     '## Assets'
   ].filter((line) => line !== '');

@@ -895,10 +895,20 @@ The job view polls status and logs, then links to generated output, Project Doct
 
 ## OffByOne v4.7.2 Design System Router
 
-OffByOne v4.7.2 adds a deterministic local Design System Router before generation. For each `run`, OffByOne classifies the prompt into a professional design profile (for example `premium-consumer`, `ai-saas-devtool`, `enterprise-b2b-admin`, `fintech-crypto-data`, `local-service-commerce`, `content-editorial`, or `general-business`) and writes:
+OffByOne v4.7.2 adds a deterministic local Design System Router before generation. For each `run`, OffByOne classifies the prompt into a professional design profile (for example `premium-consumer`, `ai-saas-devtool`, `enterprise-b2b-admin`, `fintech-crypto-data`, `local-service-commerce`, `content-editorial`, or `general-business`) and selects one of five mock-safe Design DNA style packs distilled from `awesome-design-md` vocabulary:
+
+- `precision-product-system`
+- `editorial-craft-gallery`
+- `trust-data-infrastructure`
+- `warm-marketplace-service`
+- `reading-knowledge-system`
+
+The packs are local abstractions only: no external brand assets, logos, exact page structures, proprietary copy, remote images, or URLs are bundled or fetched. The design router writes:
 
 - `.agent/design/design-profile.json`
 - `.agent/design/design-profile.md`
+- `.agent/design/style-pack.json`
+- `.agent/design/style-pack.md`
 - `.agent/state/design-profile.json`
 
-Generator prompts receive `design_profile_json`, `design_profile_markdown`, `design_reference_family`, and `design_site_type`. Reference families such as Apple, Linear, Ant Design, Coinbase, Airbnb, or Notion are vocabulary labels only: use their mature spacing, hierarchy, density, and component rhythm as inspiration, not as cloning instructions. The Product Design Supervisor also reads the profile and checks expected signals, missing signals, density expectations, and anti-patterns.
+Generator prompts receive `design_profile_json`, `design_profile_markdown`, `style_pack_json`, `style_pack_markdown`, `style_pack_id`, `design_reference_family`, and `design_site_type`. Reference families such as Apple, Linear, Ant Design, Coinbase, Airbnb, or Notion are vocabulary labels only: use their mature spacing, hierarchy, density, and component rhythm as inspiration, not as cloning instructions. The visual asset plan reads the style pack for local SVG/placeholder directives, and the Product Design Supervisor reads the profile to validate expected signals, missing signals, style-pack QA signals, non-infringement boundaries, density expectations, and anti-patterns.

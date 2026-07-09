@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { validateStylePack } = require('../design/stylePacks');
 
 function readDesignProfile(context) {
   if (context && context.designProfile) return context.designProfile;
@@ -95,11 +96,28 @@ function focusAppears(text, focus) {
   return tokens.length ? tokens.some((token) => lower.includes(token)) : false;
 }
 
+function stylePackFromProfile(designProfile) {
+  if (!designProfile) return null;
+  if (designProfile.stylePack && designProfile.stylePack.id) return designProfile.stylePack;
+  if (designProfile.styleDna && designProfile.styleDna.stylePack && designProfile.styleDna.stylePack.id) return designProfile.styleDna.stylePack;
+  if (designProfile.styleDna && designProfile.styleDna.id) {
+    return {
+      id: designProfile.styleDna.id,
+      label: designProfile.styleDna.label,
+      qaSignals: designProfile.styleDna.qaFocus || designProfile.styleDna.qaSignals || [],
+      avoid: designProfile.styleDna.antiPatterns || designProfile.styleDna.avoid || [],
+      nonInfringementBoundary: designProfile.styleDna.cloneBoundary || designProfile.styleDna.nonInfringementBoundary || ''
+    };
+  }
+  return null;
+}
+
 function reviewDesignProfessionalism(context) {
   const text = String(context.combinedText || '');
   const generatedText = String(sourceOnlyText(context) || '');
   const lower = text.toLowerCase();
   const designProfile = readDesignProfile(context);
+  const stylePack = stylePackFromProfile(designProfile);
   const headingMatches = text.match(/<h[1-6][^>]*>|title|heading|标题/gi) || [];
   const imageMatches = text.match(/<img|backgroundimage|images\.unsplash|image|图片|视觉/gi) || [];
   const genericMatches = text.match(/lorem ipsum|welcome to|best solution|awesome|amazing|your business|示例|占位|模板/gi) || [];
@@ -110,6 +128,10 @@ function reviewDesignProfessionalism(context) {
   const missingSignals = expectedSignals.filter((signal) => !presentSignals.includes(signal));
   const guidanceFocus = designProfile && designProfile.professionalGuidance && Array.isArray(designProfile.professionalGuidance.qaFocus) ? designProfile.professionalGuidance.qaFocus : [];
   const guidanceHits = guidanceFocus.filter((focus) => focusAppears(text, focus));
+  const stylePackValidation = stylePack && stylePack.source ? validateStylePack(stylePack) : (designProfile && designProfile.stylePackValidation ? designProfile.stylePackValidation : { ok: Boolean(stylePack), errors: stylePack ? [] : ['missing style pack'] });
+  const stylePackQaSignals = stylePack && Array.isArray(stylePack.qaSignals) ? stylePack.qaSignals : [];
+  const stylePackSignalHits = stylePackQaSignals.filter((signal) => focusAppears(generatedText, signal));
+  const missingStylePackSignals = stylePackQaSignals.filter((signal) => !stylePackSignalHits.includes(signal));
   const antiPatternsDetected = antiPatternHits(generatedText, designProfile);
   const issues = [];
   const recommendations = [];
@@ -134,6 +156,22 @@ function reviewDesignProfessionalism(context) {
       score -= 8;
       issues.push('Professional UI guidance QA focus is not visibly represented in generated source.');
       recommendations.push('Make the routed professional UI guidance concrete in page sections/components: ' + guidanceFocus.slice(0, 4).join(', ') + '.');
+    }
+    if (!stylePack) {
+      score -= 8;
+      issues.push('Design DNA style pack is missing from the design profile.');
+      recommendations.push('Regenerate the design profile so `.agent/design/style-pack.json` and `stylePackId` are available to generation and review.');
+    } else {
+      if (stylePackValidation && stylePackValidation.ok === false) {
+        score -= 8;
+        issues.push('Design DNA style pack validation failed: ' + (stylePackValidation.errors || []).slice(0, 3).join('; '));
+        recommendations.push('Fix the local style pack schema before using it for generation.');
+      }
+      if (stylePackQaSignals.length && !stylePackSignalHits.length) {
+        score -= 6;
+        issues.push('Design DNA style-pack QA signals are not visibly represented in generated source: ' + missingStylePackSignals.slice(0, 3).join(', ') + '.');
+        recommendations.push('Make at least one style-pack signal concrete in the page: ' + stylePackQaSignals.slice(0, 4).join(', ') + '.');
+      }
     }
   }
   score = Math.max(0, score);
@@ -160,6 +198,15 @@ function reviewDesignProfessionalism(context) {
           sourceSkill: designProfile.professionalGuidance.sourceSkill,
           qaFocus: guidanceFocus,
           qaFocusHits: guidanceHits
+        } : null,
+        stylePack: stylePack ? {
+          id: stylePack.id,
+          label: stylePack.label,
+          expectedQaSignals: stylePackQaSignals,
+          presentQaSignals: stylePackSignalHits,
+          missingQaSignals: missingStylePackSignals,
+          validation: stylePackValidation,
+          nonInfringementBoundary: stylePack.nonInfringementBoundary || (designProfile.styleDna && designProfile.styleDna.cloneBoundary) || ''
         } : null,
         antiPatternsDetected
       } : null

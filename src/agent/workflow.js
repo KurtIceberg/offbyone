@@ -15,7 +15,7 @@ const { layoutGenerator } = require('../generators/layoutGenerator');
 const { pageGenerator } = require('../generators/pageGenerator');
 const { backendGenerator } = require('../generators/backendGenerator');
 const { appGenerator } = require('../generators/appGenerator');
-const { createDesignProfile, renderDesignProfileMarkdown, writeDesignArtifacts, renderProfessionalDesignGuidanceMarkdown } = require('../design');
+const { createDesignProfile, renderDesignProfileMarkdown, writeDesignArtifacts, renderProfessionalDesignGuidanceMarkdown, renderStylePackMarkdown } = require('../design');
 const { writeOrganismBundle } = require('../organism/artifacts');
 const { createVisualAssetPlan, writeVisualAssetPlanArtifacts, writeVisualAssetRuntimeModule } = require('../visuals/visualAssetPlan');
 const { createIndustryPlaybook, renderIndustryPlaybookMarkdown } = require('../oracle/industryPlaybook');
@@ -57,7 +57,7 @@ async function runWorkflow(options) {
   });
   const state = {};
   const sourcePromptForIntelligence = options.sourcePrompt || options.prompt;
-  const designProfile = createDesignProfile({ prompt: options.prompt, oracleBrief: options.oracleBrief || null });
+  const designProfile = createDesignProfile({ prompt: options.prompt, oracleBrief: options.oracleBrief || null, stylePackId: options.stylePackId || options.designStylePackId || '' });
   const industryPlaybook = createIndustryPlaybook({
     prompt: sourcePromptForIntelligence,
     siteType: designProfile.siteType,
@@ -86,13 +86,14 @@ async function runWorkflow(options) {
   const requestedPlanPages = deriveRequestedPages({ oracleBrief: options.oracleBrief || null, prompt: options.prompt });
   const designProfileMarkdown = renderDesignProfileMarkdown(designProfile);
   const professionalDesignGuidanceMarkdown = renderProfessionalDesignGuidanceMarkdown(designProfile.professionalGuidance);
+  const stylePackMarkdown = designProfile.stylePack ? renderStylePackMarkdown(designProfile.stylePack) : '';
   writeDesignArtifacts(output, designProfile, { force: true });
   writeJsonSafe(output, '.agent/state/design-profile.json', designProfile, { force: true });
   writeJsonSafe(output, '.agent/state/industry-playbook.json', industryPlaybook, { force: true });
   writeFileSafe(output, '.agent/state/industry-playbook.md', industryPlaybookMarkdown + '\n', { force: true });
   writeVisualAssetPlanArtifacts(output, visualAssetPlan);
   const visualAssetRuntime = writeVisualAssetRuntimeModule(output, visualAssetPlan, { force: true });
-  logger.info('Design profile:', designProfile.siteType + ' / ' + designProfile.referenceFamily.join(',') + ' / density=' + designProfile.density);
+  logger.info('Design profile:', designProfile.siteType + ' / style=' + (designProfile.stylePackId || '-') + ' / ' + designProfile.referenceFamily.join(',') + ' / density=' + designProfile.density);
   logger.info('Industry playbook:', industryPlaybook.id + ' / pages=' + industryPlaybook.requestedPageCount + ' / modules=' + industryPlaybook.mustHaveModules.slice(0, 4).join(','));
   logger.info('Visual asset plan:', (visualAssetPlan.siteType || 'unknown') + ' / assets=' + (Array.isArray(visualAssetPlan.assets) ? visualAssetPlan.assets.length : 0));
   const priorSummary = readJsonIfExists(path.join(output, '.agent', 'state', 'summary.json')) || {};
@@ -128,6 +129,11 @@ async function runWorkflow(options) {
       industry_vertical: industryPlaybook.label || industryPlaybook.id,
       design_profile_json: JSON.stringify(designProfile, null, 2),
       design_profile_markdown: designProfileMarkdown,
+      style_pack_json: designProfile.stylePack ? JSON.stringify(designProfile.stylePack, null, 2) : '',
+      style_pack_markdown: stylePackMarkdown,
+      style_pack_id: designProfile.stylePackId || '',
+      style_dna_json: designProfile.styleDna ? JSON.stringify(designProfile.styleDna, null, 2) : '',
+      style_dna_markdown: designProfile.styleDna ? (designProfile.styleDna.label + ': ' + designProfile.styleDna.summary + '\nClone boundary: ' + designProfile.styleDna.cloneBoundary) : '',
       professional_design_guidance_json: JSON.stringify(designProfile.professionalGuidance || {}, null, 2),
       professional_design_guidance_markdown: professionalDesignGuidanceMarkdown,
       design_reference_family: designProfile.referenceFamily.join(', '),

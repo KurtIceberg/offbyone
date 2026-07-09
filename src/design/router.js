@@ -1,5 +1,6 @@
 const { DESIGN_VERSION, FAMILIES } = require('./references');
 const { createProfessionalDesignGuidance } = require('./skillGuidance');
+const { STYLE_PACK_VERSION, createStyleDna, mergeStyleIntoFamily } = require('./stylePacks');
 const { createQualityProfile } = require('../quality');
 
 function normalizeText(value) {
@@ -14,6 +15,8 @@ function collectOracleText(oracleBrief) {
     if (oracleBrief.contentStrategy) parts.push(JSON.stringify(oracleBrief.contentStrategy));
     if (oracleBrief.visualDirection) parts.push(JSON.stringify(oracleBrief.visualDirection));
     if (oracleBrief.productLogic) parts.push(JSON.stringify(oracleBrief.productLogic));
+    if (oracleBrief.generationStrategy) parts.push(JSON.stringify(oracleBrief.generationStrategy));
+    if (oracleBrief.styleDna) parts.push(JSON.stringify(oracleBrief.styleDna));
   } catch (_) {}
   return parts.join(' ');
 }
@@ -68,23 +71,39 @@ function createDesignProfile(input = {}) {
   const matchedSignals = best.matched.length ? best.matched : ['fallback:general-business'];
   const serviceConstraint = hasServiceSiteImageryConstraint(prompt, input.oracleBrief);
   const routedSiteType = serviceConstraint ? 'service-site' : best.key;
+  const requestedStylePackId = input.stylePackId || input.styleDnaId || input.designStylePackId || (input.oracleBrief && input.oracleBrief.generationStrategy && input.oracleBrief.generationStrategy.stylePackId) || (input.oracleBrief && input.oracleBrief.styleDna && input.oracleBrief.styleDna.id);
+  const styleDna = createStyleDna({
+    prompt,
+    oracleBrief: input.oracleBrief,
+    siteType: routedSiteType,
+    designSiteType: best.key,
+    qualityProfileId: qualityProfile.id,
+    stylePackId: requestedStylePackId
+  });
+  const stylePack = styleDna.stylePack;
+  const styledBase = mergeStyleIntoFamily(base, styleDna);
   const profile = {
     version: DESIGN_VERSION,
     siteType: routedSiteType,
+    stylePackId: styleDna.id,
+    stylePack,
+    stylePackVersion: STYLE_PACK_VERSION,
+    stylePackValidation: styleDna.validation,
+    styleDna,
     qualityProfileId: qualityProfile.id,
     qualityProfile,
     confidence: confidenceFor(best, second),
-    referenceFamily: base.referenceFamily.slice(),
-    visualThesis: base.visualThesis,
-    layoutPattern: base.layoutPattern,
-    density: base.density,
-    imageStrategy: serviceConstraint ? 'workflow automation map, agent operating model diagram, ROI workshop canvas, abstract intelligence system, and team workflow scene; avoid product screenshot, generic dashboard mockup, and command palette as primary visual' : base.imageStrategy,
-    typography: base.typography,
-    colorStrategy: base.colorStrategy,
-    sectionOrder: base.sectionOrder.slice(),
-    componentGuidance: base.componentGuidance.slice(),
-    antiPatterns: base.antiPatterns.slice(),
-    matchedSignals: serviceConstraint ? Array.from(new Set(matchedSignals.concat(['service-site-imagery-constraint']))) : matchedSignals
+    referenceFamily: styledBase.referenceFamily.slice(),
+    visualThesis: styledBase.visualThesis,
+    layoutPattern: styledBase.layoutPattern,
+    density: styledBase.density,
+    imageStrategy: serviceConstraint ? 'workflow automation map, agent operating model diagram, ROI workshop canvas, abstract intelligence system, and team workflow scene; avoid product screenshot, generic dashboard mockup, and command palette as primary visual' : styledBase.imageStrategy,
+    typography: styledBase.typography,
+    colorStrategy: styledBase.colorStrategy,
+    sectionOrder: styledBase.sectionOrder.slice(),
+    componentGuidance: styledBase.componentGuidance.slice(),
+    antiPatterns: styledBase.antiPatterns.slice(),
+    matchedSignals: serviceConstraint ? Array.from(new Set(matchedSignals.concat(['service-site-imagery-constraint', 'style-pack:' + styleDna.id]))) : Array.from(new Set(matchedSignals.concat(['style-pack:' + styleDna.id])))
   };
   profile.professionalGuidance = createProfessionalDesignGuidance(profile);
   return profile;

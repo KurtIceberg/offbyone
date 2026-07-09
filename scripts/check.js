@@ -7,6 +7,7 @@ const { execFileSync } = require('child_process');
 const { classifyError, writeFailureArtifacts, readFailureArtifact, preflightOrWriteFailure, hasServiceSiteImageryConstraint, parsePlanPages, parseLayoutOutput, parsePageOutput, createPageApiPlan, renderTemplate, limitPages, selectPages, validateOutput, extractThemeCss, createRoutes, createScaffoldFiles, findPageApiPlanEntry, pageApiBindingInstructions, bindPageSourceToApiPlan, ensureLayoutRendersChildren, resolveProviderConfig, listProviders, LlmClient, extractSql, defaultSql, normalizeSqlForSqlite, runWorkflow, runPreviewCheck, startPreviewServers, validatePreviewLayout, runVisualCheck, renderMarkdown, finalizeReport, comparePngScreenshots, buildApiVisibilityExpectations, evaluateApiVisibilityDom, runAcceptanceCheck, renderAcceptanceMarkdown, createDeliveryPackage, runDeployCheck, runProjectDoctor, renderProjectDoctorMarkdown, createRefinePlan, renderRefinePlanMarkdown, createDeliveryBundle, startUiServer, selectImageSet, createVisualAssets, prepareRasterVisualAssets, requiresRasterVisualAssets, slugify, resolveSafeFile, resolveSafePreviewFile, getJobPreview, getProjectPreview, rewritePreviewHtml, listRecentProjects, clearRecentProjects, resolveGeneratedProjectRoot, getProviderMetadata, deriveStudioSchema, readStudioDraft, saveStudioDraft, createOracleBrief, renderOracleMarkdown, runProductDesignSupervisor, runProductReview, createPatchPlan, createRevisionBrief, runRevisionPass, createDesignProfile, renderDesignProfileMarkdown, renderProfessionalDesignGuidanceMarkdown, createIndustryPlaybook, renderIndustryPlaybookMarkdown, inferRequestedPageCount, layoutGenerator, createLayoutPromptVariables, compactLayoutPlan, buildRecoveryLayoutPrompt, isLayoutRecoveryMode, shouldUseLocalLayout, buildLocalLayoutOutput, createPagePromptVariables, compactPagePlan, compactLayoutOutputForPage, compactPageIndustryPlaybook, shouldUseCurlFallback, extractOpenAiCompatibleContent, createOpenAiCompatiblePayload, supportsTemperatureParameter, sanitizeCurlError, createQualityProfile, QUALITY_PROFILE_VERSION, QUALITY_PROFILES, createCommercialReadinessContract, COMMERCIAL_READINESS_VERSION, PRODUCT_GENOME_VERSION, createProductGenome, validateProductGenome, QUALITY_CONTRACT_VERSION, createQualityContract, refreshQualityContract, writeOrganismBundle, shouldAutoRecoverPageStage, wrapPageStageError, normalizePageConcurrency, normalizeWorkflowPreviewStrategy, initialPageAttemptVariables, evaluateProjectAcceptance, deriveRequestedPages, renderRequestedPagesPlan } = require('../src');
 const oracle = require('../src/oracle');
 const { createVisualAssetPlan, createVisualAssetManifest, renderVisualAssetPlanMarkdown, renderVisualAssetRuntimeModule } = require('../src/visuals/visualAssetPlan');
+const { STYLE_PACK_VERSION, STYLE_PACKS, selectStylePack, validateStylePack, renderStylePackMarkdown } = require('../src/design/stylePacks');
 const { runQualityRegressionMatrix } = require('./quality-regression-matrix');
 const { runCommercialReadinessRegression } = require('./commercial-readiness-regression');
 const { pageGenerator, buildRecoveryPagePrompt } = require('../src/generators/pageGenerator');
@@ -376,15 +377,32 @@ async function runChecks(options = {}) {
   const packageJsonForOutputs = JSON.parse(fs.readFileSync(path.join(path.resolve(__dirname, '..'), 'package.json'), 'utf8'));
   assert.strictEqual(packageJsonForOutputs.scripts['outputs-governance'], 'node scripts/outputs-governance.js', 'package exposes outputs-governance script');
   assert.strictEqual(typeof createDesignProfile, 'function', 'exports createDesignProfile');
+  assert.strictEqual(STYLE_PACK_VERSION, 'offbyone-design-dna-style-packs-v1', 'Design DNA style pack version is stable');
+  assert.strictEqual(STYLE_PACKS.length, 5, 'Design DNA MVP exposes exactly five local style packs');
+  for (const pack of STYLE_PACKS) {
+    assert.strictEqual(pack.source, 'awesome-design-md-local-distillation', 'style pack source is local awesome-design-md distillation');
+    assert.strictEqual(validateStylePack(pack).ok, true, 'style pack validates ' + pack.id);
+    assert.ok(!/https?:\/\//i.test(JSON.stringify(pack)), 'style pack has no remote URLs ' + pack.id);
+  }
+  const forcedStylePack = selectStylePack({ stylePackId: 'precision-product-system' });
+  assert.strictEqual(forcedStylePack.id, 'precision-product-system', 'explicit Design DNA style pack can be selected');
+  assert.ok(/Design DNA Style Pack|Non-Infringement Boundary/.test(renderStylePackMarkdown(forcedStylePack)), 'style pack markdown renders Design DNA and boundary');
   const designProfile = createDesignProfile({ prompt: '我要做一个高端iPhone手机壳品牌官网，强调真实吉他材料、手工工艺、海外售价约60美元' });
   assert.strictEqual(designProfile.version, '4.7.2', 'design profile has v4.7.2 version');
   assert.strictEqual(designProfile.siteType, 'premium-consumer', 'design router maps premium iPhone prompt to premium-consumer');
   assert.ok(designProfile.qualityProfileId && designProfile.qualityProfile && designProfile.qualityProfile.id === designProfile.qualityProfileId, 'design profile carries the quality profile');
   assert.ok(Array.isArray(designProfile.referenceFamily) && designProfile.referenceFamily.includes('apple'), 'design profile includes premium reference family');
+  assert.strictEqual(designProfile.stylePackId, 'editorial-craft-gallery', 'design router attaches premium editorial Design DNA style pack');
+  assert.ok(designProfile.stylePack && Array.isArray(designProfile.stylePack.designDNA) && designProfile.stylePack.designDNA.length > 0, 'design profile embeds compact style pack');
+  assert.strictEqual(designProfile.stylePackValidation.ok, true, 'design profile validates selected style pack');
+  assert.ok(designProfile.professionalGuidance && designProfile.professionalGuidance.stylePackId === designProfile.stylePackId, 'professional guidance carries selected style pack');
   const visualPlan = createVisualAssetPlan({ prompt: '为真实吉他木材 iPhone 手机壳生成一个高端中文官网', designProfile });
   assert.strictEqual(visualPlan.mode, 'planning-only', 'visual asset pipeline is planning-only');
   assert.strictEqual(visualPlan.network, 'disabled', 'visual asset pipeline does not use network services');
   assert.strictEqual(visualPlan.siteType, 'premium-consumer-ecommerce', 'visual asset pipeline routes premium iPhone prompt');
+  assert.strictEqual(visualPlan.visualStyle.stylePackId, designProfile.stylePackId, 'visual asset plan reads the style pack');
+  assert.ok(visualPlan.visualRequirements.stylePackVisualAssetDirectives.length > 0, 'visual asset plan carries style-pack visual directives');
+  assert.ok(visualPlan.visualRequirements.stylePackQaSignals.includes('material or craft detail'), 'visual asset plan carries style-pack QA signals');
   assert.ok(visualPlan.assets.some((asset) => asset.slot === 'hero-product-lifestyle'), 'visual asset pipeline includes premium hero slot');
   assert.ok(visualPlan.assets.every((asset) => asset.fallback && asset.fallback.type === 'deterministic-css-placeholder'), 'visual asset pipeline provides deterministic fallbacks');
   const creatorEnergyVisualPlan = createVisualAssetPlan({ prompt: 'Build a premium late-night creator energy subscription box for programmers, gamers, anime fans, and independent creators.' });
@@ -395,6 +413,7 @@ async function runChecks(options = {}) {
   assert.strictEqual(visualManifest.version, 'offbyone-visual-asset-manifest-v1', 'visual asset manifest has stable version');
   assert.strictEqual(visualManifest.mode, 'provider-neutral-local-svg', 'visual asset manifest is provider-neutral local SVG mode');
   assert.strictEqual(visualManifest.network, 'disabled', 'visual asset manifest does not use network services');
+  assert.strictEqual(visualManifest.stylePackId, designProfile.stylePackId, 'visual asset manifest exposes style pack id');
   assert.ok(visualManifest.hero && visualManifest.hero.status === 'ready', 'visual asset manifest exposes ready hero');
   assert.ok(visualManifest.hero.url.startsWith('data:image/svg+xml'), 'visual asset manifest hero uses local SVG data URI');
   assert.ok(visualManifest.assets.every((asset) => asset.provider === 'deterministic-local' && asset.sourceType === 'svg-data-uri' && asset.src === asset.url), 'visual asset manifest uses deterministic local SVG images');
@@ -416,7 +435,7 @@ async function runChecks(options = {}) {
   for (const token of ['openai', 'gpt-image', 'unsplash', 'pexels', 'http://', 'https://', 'api_key', 'api-key', 'fal-ai']) {
     assert.ok(!visualPlanText.includes(token), 'visual asset plan avoids provider/network token ' + token);
   }
-  assert.ok(renderVisualAssetPlanMarkdown(visualPlan).includes('Visual Asset Pipeline Plan'), 'visual asset plan renders markdown');
+  assert.ok(/Visual Asset Pipeline Plan|Design DNA style pack|Design DNA Visual Directives/.test(renderVisualAssetPlanMarkdown(visualPlan)), 'visual asset plan renders Design DNA markdown');
   assert.ok(designProfile.professionalGuidance && designProfile.professionalGuidance.sourceSkill === 'professional-ui-app-ppt-design@1.0.0', 'design profile embeds professional UI skill guidance');
   assert.strictEqual(designProfile.professionalGuidance.tasteGuidanceSource, 'offbyone-local-taste-guidance@1.0.0', 'design profile embeds localized taste guidance');
   assert.ok(/Reading this as:/.test(designProfile.professionalGuidance.designRead), 'taste guidance includes a design read');
@@ -426,6 +445,7 @@ async function runChecks(options = {}) {
   assert.ok(Array.isArray(designProfile.professionalGuidance.layoutDirectives) && designProfile.professionalGuidance.layoutDirectives.length > 0, 'professional UI guidance includes layout directives');
   const professionalGuidanceMarkdown = renderProfessionalDesignGuidanceMarkdown(designProfile.professionalGuidance);
   assert.ok(/Professional UI Design Guidance|premium consumer website/.test(professionalGuidanceMarkdown), 'professional UI guidance markdown renders routed guidance');
+  assert.ok(/Design DNA Style Pack|Style Pack Visual Asset Directives|Non-infringement boundary/.test(professionalGuidanceMarkdown), 'professional UI guidance markdown renders style pack guidance');
   assert.ok(/Design Read \/ Taste Dials/.test(professionalGuidanceMarkdown), 'professional UI guidance markdown renders taste dials');
   assert.ok(/Anti-slop rules/.test(professionalGuidanceMarkdown), 'professional UI guidance markdown renders anti-slop rules');
   assert.ok(/offbyone-local-taste-guidance/.test(professionalGuidanceMarkdown), 'professional UI guidance markdown renders taste guidance source');
@@ -433,12 +453,12 @@ async function runChecks(options = {}) {
   assert.ok(/Component directives/.test(professionalGuidanceMarkdown), 'professional UI guidance markdown preserves component directives');
   assert.ok(/QA focus/.test(professionalGuidanceMarkdown), 'professional UI guidance markdown preserves QA focus');
   assert.ok(/Clone boundary/.test(professionalGuidanceMarkdown), 'professional UI guidance markdown preserves clone boundary');
-  assert.ok(/Professional visual system|Professional guidance source/.test(renderDesignProfileMarkdown(designProfile)), 'design profile markdown includes professional guidance fields');
-  for (const file of ['index.js', 'router.js', 'references.js', 'artifacts.js', 'skillGuidance.js']) {
+  assert.ok(/Professional visual system|Professional guidance source|Design DNA Style Pack/.test(renderDesignProfileMarkdown(designProfile)), 'design profile markdown includes professional guidance and Design DNA fields');
+  for (const file of ['index.js', 'router.js', 'references.js', 'artifacts.js', 'skillGuidance.js', 'stylePacks.js']) {
     assert.ok(fs.existsSync(path.join(path.resolve(__dirname, '..'), 'src', 'design', file)), 'design module exists ' + file);
   }
   const workflowSource = fs.readFileSync(path.join(path.resolve(__dirname, '..'), 'src', 'agent', 'workflow.js'), 'utf8');
-  assert.ok(workflowSource.includes('createDesignProfile') && workflowSource.includes('design_profile_json'), 'workflow references design profile variables');
+  assert.ok(workflowSource.includes('createDesignProfile') && workflowSource.includes('design_profile_json') && workflowSource.includes('style_pack_json'), 'workflow references design profile and style pack variables');
   const readmeSource = fs.readFileSync(path.join(path.resolve(__dirname, '..'), 'README.md'), 'utf8');
   assert.ok(/v4\.7\.2|Design System Router/.test(readmeSource), 'README mentions v4.7.2 design system router');
   const supervisorDesignSource = fs.readFileSync(path.join(path.resolve(__dirname, '..'), 'src', 'supervisor', 'designHeuristics.js'), 'utf8');
@@ -494,9 +514,16 @@ async function runChecks(options = {}) {
   }
   const supervisorRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'offbyone-supervisor-check-'));
   fs.mkdirSync(path.join(supervisorRoot, '.agent', 'oracle'), { recursive: true });
+  fs.mkdirSync(path.join(supervisorRoot, '.agent', 'design'), { recursive: true });
+  fs.mkdirSync(path.join(supervisorRoot, '.agent', 'assets'), { recursive: true });
   fs.mkdirSync(path.join(supervisorRoot, '.agent', 'state'), { recursive: true });
   fs.mkdirSync(path.join(supervisorRoot, 'src', 'pages'), { recursive: true });
   fs.writeFileSync(path.join(supervisorRoot, '.agent', 'oracle', 'oracle-brief.json'), JSON.stringify(oracleBrief, null, 2));
+  const supervisorDesignProfile = createDesignProfile({ prompt: oracleBrief.sourcePrompt, oracleBrief });
+  const supervisorVisualPlan = createVisualAssetPlan({ prompt: oracleBrief.sourcePrompt, oracleBrief, designProfile: supervisorDesignProfile });
+  fs.writeFileSync(path.join(supervisorRoot, '.agent', 'design', 'design-profile.json'), JSON.stringify(supervisorDesignProfile, null, 2));
+  fs.writeFileSync(path.join(supervisorRoot, '.agent', 'design', 'style-pack.json'), JSON.stringify(supervisorDesignProfile.stylePack, null, 2));
+  fs.writeFileSync(path.join(supervisorRoot, '.agent', 'assets', 'visual-assets-plan.json'), JSON.stringify(supervisorVisualPlan, null, 2));
   fs.writeFileSync(path.join(supervisorRoot, '.agent', 'state', 'pages.json'), JSON.stringify([{ name: 'Home.jsx', componentName: 'Home', content: 'Hero, premium iPhone cases, craft, customer proof, buy CTA' }], null, 2));
   fs.writeFileSync(path.join(supervisorRoot, 'src', 'pages', 'Home.jsx'), "export default function Home(){return <main><section><h1>Premium iPhone cases for creators</h1><a>立即购买</a></section><section>品牌故事与材料工艺 craft</section><section>Product collection 防摔保护</section><section>Customer reviews trust proof</section><form><input name='email'/><button>咨询购买</button></form></main>}");
   const supervisorResult = runProductDesignSupervisor({ output: supervisorRoot });
@@ -515,6 +542,10 @@ async function runChecks(options = {}) {
   assert.ok(Array.isArray(supervisorReview.revisionPlan), 'supervisor review has revisionPlan');
   assert.ok(supervisorReview.qualityProfileId && supervisorReview.qualityProfile, 'supervisor review includes quality profile evidence');
   assert.ok(supervisorReview.dimensions.some((d) => d.id === 'quality_profile_fit' && d.qualityProfileId && d.evidence), 'supervisor review includes quality-profile-aware dimension');
+  const supervisorDesignDimension = supervisorReview.dimensions.find((d) => d.id === 'design_professionalism');
+  assert.ok(supervisorDesignDimension && supervisorDesignDimension.evidence && supervisorDesignDimension.evidence.designProfile && supervisorDesignDimension.evidence.designProfile.stylePack, 'supervisor design review exposes style-pack evidence');
+  assert.strictEqual(supervisorDesignDimension.evidence.designProfile.stylePack.id, supervisorDesignProfile.stylePackId, 'supervisor reads selected style pack from design profile');
+  assert.strictEqual(supervisorDesignDimension.evidence.designProfile.stylePack.validation.ok, true, 'supervisor validates style pack schema');
   assert.ok(Array.isArray(supervisorReview.topIssues), 'supervisor review includes topIssues');
   assert.ok(/Revision Instructions|修整|Must fix|Should improve|Nice to have/.test(fs.readFileSync(supervisorResult.revisionPrompt, 'utf8')), 'supervisor revision prompt has priority-grouped instructions');
 
