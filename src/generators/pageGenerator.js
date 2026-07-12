@@ -277,6 +277,7 @@ function compactProfessionalGuidance(value, maxChars = MAX_PROFESSIONAL_GUIDANCE
       parsed.artifactType ? '- Artifact type: `' + parsed.artifactType + '`' : '',
       parsed.businessGoal ? '- Business goal: ' + parsed.businessGoal : '',
       parsed.visualSystem ? '- Visual system: ' + parsed.visualSystem : '',
+      parsed.motionQualityGate ? '- Motion: ' + compactMotionGate(parsed.motionQualityGate, 220) : '',
       Array.isArray(parsed.layoutDirectives) ? '- Layout: ' + parsed.layoutDirectives.slice(0, 2).join(' / ') : '',
       Array.isArray(parsed.componentDirectives) ? '- Components: ' + parsed.componentDirectives.slice(0, 2).join(' / ') : '',
       Array.isArray(parsed.qaFocus) ? '- QA focus: ' + parsed.qaFocus.slice(0, 5).join(', ') : ''
@@ -284,6 +285,13 @@ function compactProfessionalGuidance(value, maxChars = MAX_PROFESSIONAL_GUIDANCE
     return compactText(lines, maxChars, 'professional design guidance');
   }
   return compactText(value, maxChars, 'professional design guidance');
+}
+
+function compactMotionGate(gate = {}, maxChars = 220) {
+  const tokens = gate.tokens && gate.tokens.easing ? 'ease-out ' + gate.tokens.easing.uiEaseOut : '';
+  const directives = Array.isArray(gate.generationDirectives) ? gate.generationDirectives.slice(0, 2).join(' / ') : '';
+  const redFlags = Array.isArray(gate.redFlags) ? 'Avoid ' + gate.redFlags.slice(0, 3).join(', ') : '';
+  return compactText([gate.source, gate.intensity, tokens, directives, redFlags].filter(Boolean).join(' | '), maxChars, 'motion quality');
 }
 
 function summarizeVisualAssets(userPrompt, visualAssetPlan = null, designProfile = null) {

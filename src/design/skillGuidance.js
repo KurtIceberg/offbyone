@@ -1,4 +1,6 @@
-const MAX_GUIDANCE_CHARS = 6800;
+const { createMotionQualityGate } = require('./motionQuality');
+
+const MAX_GUIDANCE_CHARS = 8600;
 
 const DESIGN_SKILL_VERSION = 'professional-ui-app-ppt-design@1.0.0';
 const TASTE_GUIDANCE_VERSION = 'offbyone-local-taste-guidance@1.0.0';
@@ -145,6 +147,7 @@ function createProfessionalDesignGuidance(profile = {}) {
   const styleDna = profile.styleDna || null;
   const stylePack = profile.stylePack || (styleDna && styleDna.stylePack) || null;
   const tasteGuidance = createTasteGuidance(profile, guidance);
+  const motionQualityGate = createMotionQualityGate({ profile, guidance, tasteDials: tasteGuidance.dials, stylePack });
   const referenceSystems = unique([...(guidance.referenceSystems || []), ...((styleDna && styleDna.sourceReferences) || [])], 9);
   const designDNA = stylePack && Array.isArray(stylePack.designDNA) ? stylePack.designDNA : [];
   const styleLayoutMoves = stylePack && Array.isArray(stylePack.layoutMoves) ? stylePack.layoutMoves : [];
@@ -181,6 +184,11 @@ function createProfessionalDesignGuidance(profile = {}) {
     compositionAlternatives: tasteGuidance.compositionAlternatives,
     antiSlopRules: tasteGuidance.antiSlopRules,
     tasteQaDirectives: tasteGuidance.qaDirectives,
+    motionQualitySource: motionQualityGate.source,
+    motionQualityGate,
+    motionDirectives: motionQualityGate.generationDirectives,
+    motionQaSignals: motionQualityGate.qaSignals,
+    motionAntiPatterns: motionQualityGate.redFlags,
     layoutDirectives: unique([...(guidance.layoutDirectives || []), ...styleLayoutMoves, ...((styleDna && styleDna.componentGuidance) || [])], 10),
     componentDirectives: unique([...(guidance.componentDirectives || []), ...styleComponentMoves], 10),
     qaFocus,
@@ -275,17 +283,14 @@ function renderProfessionalDesignGuidanceMarkdown(guidance = {}) {
     '- Variance: `' + ((guidance.tasteDials && guidance.tasteDials.variance) || 'medium') + '` Motion: `' + ((guidance.tasteDials && guidance.tasteDials.motion) || 'low-medium') + '` Density: `' + ((guidance.tasteDials && guidance.tasteDials.density) || 'medium') + '`',
     '- Composition alternatives: ' + ((Array.isArray(guidance.compositionAlternatives) ? guidance.compositionAlternatives.join('; ') : '') || 'avoid default template composition'),
     '',
+    '## Motion Quality Gate',
+    renderMotionQualityGate(guidance.motionQualityGate || { generationDirectives: guidance.motionDirectives, qaSignals: guidance.motionQaSignals, redFlags: guidance.motionAntiPatterns }),
+    '',
     '## Anti-slop rules',
     renderList(guidance.antiSlopRules),
     '',
     '## Taste QA directives',
     renderList(guidance.tasteQaDirectives),
-    '',
-    '## Layout directives',
-    renderList(guidance.layoutDirectives),
-    '',
-    '## Component directives',
-    renderList(guidance.componentDirectives),
     '',
     '## QA focus',
     renderList(guidance.qaFocus),
@@ -295,9 +300,33 @@ function renderProfessionalDesignGuidanceMarkdown(guidance = {}) {
     '',
     '## Non-infringement boundary',
     guidance.nonInfringementBoundary || guidance.cloneBoundary || '',
+    '',
+    '## Layout directives',
+    renderList((guidance.layoutDirectives || []).slice(0, 6)),
+    '',
+    '## Component directives',
+    renderList((guidance.componentDirectives || []).slice(0, 6)),
     ''
   ];
   return compactText(lines.join('\n'), MAX_GUIDANCE_CHARS);
+}
+
+function renderMotionQualityGate(gate = {}) {
+  const tokens = gate.tokens || {};
+  const easing = tokens.easing || {};
+  const duration = tokens.duration || {};
+  const physicality = tokens.physicality || {};
+  const directives = Array.isArray(gate.generationDirectives) ? gate.generationDirectives.slice(0, 4) : [];
+  const lines = [
+    '- Source: `' + (gate.source || '') + '` version `' + (gate.version || '') + '` intensity `' + (gate.intensity || 'low-medium') + '`',
+    '- Read: ' + (gate.motionRead || 'Motion should make the interface feel responsive, oriented, and intentional.'),
+    easing.uiEaseOut ? '- Tokens: ease-out `' + easing.uiEaseOut + '`, ease-in-out `' + easing.uiEaseInOut + '`, drawer `' + easing.drawerEase + '`; routine UI `' + (duration.routineUiMax || '<=300ms') + '`, press `' + (duration.press || '100-160ms') + '`.' : '',
+    physicality.pressScale ? '- Physicality: press `' + physicality.pressScale + '`, enter `' + physicality.enterScale + '`, overlay origin `' + physicality.popoverOrigin + '`.' : '',
+    directives.length ? '- Directives: ' + directives.join(' / ') : '',
+    Array.isArray(gate.qaSignals) ? '- QA signals: ' + gate.qaSignals.join(', ') : '',
+    Array.isArray(gate.redFlags) ? '- Red flags: ' + gate.redFlags.join(', ') : ''
+  ];
+  return lines.filter(Boolean).join('\n');
 }
 
 function renderList(items) {

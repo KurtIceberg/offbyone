@@ -46,7 +46,7 @@ Follow this profile before making layout decisions. The reference family ({desig
 ## Professional UI Guidance
 {professional_design_guidance_markdown}
 
-Apply this guidance directly to the app shell: navigation density, spacing rhythm, component style, CTA treatment, and visual hierarchy must match the routed artifact type.
+Apply this guidance directly to the app shell: navigation density, spacing rhythm, component style, CTA treatment, visual hierarchy, and interaction motion quality must match the routed artifact type. If motion is used, keep it purposeful, transform/opacity-based, sub-300ms for routine UI, and reduced-motion-aware.
 
 ## Compact business brief
 {layout_brief}

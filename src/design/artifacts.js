@@ -6,6 +6,30 @@ function renderList(items) {
   return (Array.isArray(items) && items.length ? items : ['None']).map((item) => '- ' + item).join('\n');
 }
 
+function renderMotionProfile(gate) {
+  if (!gate) return 'None';
+  const tokens = gate.tokens || {};
+  const easing = tokens.easing || {};
+  const duration = tokens.duration || {};
+  return [
+    '- Source: `' + (gate.source || '') + '`',
+    '- Version: `' + (gate.version || '') + '`',
+    '- Intensity: `' + (gate.intensity || 'low-medium') + '`',
+    '- Motion read: ' + (gate.motionRead || ''),
+    easing.uiEaseOut ? '- Easing: ease-out `' + easing.uiEaseOut + '`, ease-in-out `' + easing.uiEaseInOut + '`' : '',
+    duration.routineUiMax ? '- Duration: routine UI `' + duration.routineUiMax + '`, press `' + duration.press + '`, dropdown/select `' + duration.dropdownSelect + '`' : '',
+    '',
+    'Directives:',
+    renderList((gate.generationDirectives || []).slice(0, 7)),
+    '',
+    'QA signals:',
+    renderList(gate.qaSignals),
+    '',
+    'Red flags:',
+    renderList(gate.redFlags)
+  ].filter(Boolean).join('\n');
+}
+
 function renderDesignProfileMarkdown(profile) {
   profile = profile || {};
   const professionalGuidance = profile.professionalGuidance || null;
@@ -61,6 +85,9 @@ function renderDesignProfileMarkdown(profile) {
     '',
     '## Professional visual system',
     professionalGuidance ? professionalGuidance.visualSystem || '' : 'Use the selected reference family as professional layout vocabulary.',
+    '',
+    '## Motion Quality Gate',
+    renderMotionProfile(professionalGuidance && professionalGuidance.motionQualityGate),
     '',
     '## Image strategy',
     profile.imageStrategy || '',

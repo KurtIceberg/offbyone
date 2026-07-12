@@ -8,6 +8,7 @@ const { classifyError, writeFailureArtifacts, readFailureArtifact, preflightOrWr
 const oracle = require('../src/oracle');
 const { createVisualAssetPlan, createVisualAssetManifest, renderVisualAssetPlanMarkdown, renderVisualAssetRuntimeModule } = require('../src/visuals/visualAssetPlan');
 const { STYLE_PACK_VERSION, STYLE_PACKS, selectStylePack, validateStylePack, renderStylePackMarkdown } = require('../src/design/stylePacks');
+const { MOTION_QUALITY_VERSION, MOTION_QUALITY_SOURCE, inspectMotionSourceText } = require('../src/design/motionQuality');
 const { runQualityRegressionMatrix } = require('./quality-regression-matrix');
 const { runCommercialReadinessRegression } = require('./commercial-readiness-regression');
 const { pageGenerator, buildRecoveryPagePrompt } = require('../src/generators/pageGenerator');
@@ -446,6 +447,15 @@ async function runChecks(options = {}) {
   assert.ok(/Visual Asset Pipeline Plan|Design DNA style pack|Design DNA Visual Directives/.test(renderVisualAssetPlanMarkdown(visualPlan)), 'visual asset plan renders Design DNA markdown');
   assert.ok(designProfile.professionalGuidance && designProfile.professionalGuidance.sourceSkill === 'professional-ui-app-ppt-design@1.0.0', 'design profile embeds professional UI skill guidance');
   assert.strictEqual(designProfile.professionalGuidance.tasteGuidanceSource, 'offbyone-local-taste-guidance@1.0.0', 'design profile embeds localized taste guidance');
+  assert.strictEqual(MOTION_QUALITY_VERSION, 'emil-kowalski-motion-quality@1.0.0', 'motion quality gate version is stable');
+  assert.strictEqual(MOTION_QUALITY_SOURCE, 'emilkowalski/skills-local-distillation', 'motion quality gate stores the upstream distillation source');
+  assert.ok(designProfile.professionalGuidance.motionQualityGate && designProfile.professionalGuidance.motionQualityGate.source === MOTION_QUALITY_SOURCE, 'professional guidance embeds the Motion Quality Gate');
+  assert.ok(designProfile.professionalGuidance.motionQualityGate.generationDirectives.some((item) => /transition-all|ease-in|scale\(0\)|reduced motion|transform and opacity/i.test(item)), 'motion quality gate carries concrete interaction rules');
+  const badMotionReview = inspectMotionSourceText('.menu { transition: all 500ms ease-in; transform: scale(0); }');
+  assert.strictEqual(badMotionReview.passed, false, 'motion review flags rough interaction code');
+  assert.ok(badMotionReview.findings.some((item) => item.id === 'transition_all'), 'motion review flags transition-all');
+  assert.ok(badMotionReview.findings.some((item) => item.id === 'ease_in_ui'), 'motion review flags ease-in UI timing');
+  assert.ok(badMotionReview.findings.some((item) => item.id === 'scale_zero'), 'motion review flags scale(0) entrances');
   assert.ok(/Reading this as:/.test(designProfile.professionalGuidance.designRead), 'taste guidance includes a design read');
   assert.deepStrictEqual(designProfile.professionalGuidance.tasteDials, { variance: 'high', motion: 'medium', density: 'low-medium' }, 'premium consumer taste dials are deterministic');
   assert.ok(designProfile.professionalGuidance.compositionAlternatives.some((item) => /image-as-canvas|bottom-left/i.test(item)), 'taste guidance suggests non-default hero compositions');
@@ -455,6 +465,7 @@ async function runChecks(options = {}) {
   assert.ok(/Professional UI Design Guidance|premium consumer website/.test(professionalGuidanceMarkdown), 'professional UI guidance markdown renders routed guidance');
   assert.ok(/Design DNA Style Pack|Style Pack Visual Asset Directives|Non-infringement boundary/.test(professionalGuidanceMarkdown), 'professional UI guidance markdown renders style pack guidance');
   assert.ok(/Design Read \/ Taste Dials/.test(professionalGuidanceMarkdown), 'professional UI guidance markdown renders taste dials');
+  assert.ok(/Motion Quality Gate|emilkowalski\/skills-local-distillation|transition-all/.test(professionalGuidanceMarkdown), 'professional UI guidance markdown renders motion quality gate');
   assert.ok(/Anti-slop rules/.test(professionalGuidanceMarkdown), 'professional UI guidance markdown renders anti-slop rules');
   assert.ok(/offbyone-local-taste-guidance/.test(professionalGuidanceMarkdown), 'professional UI guidance markdown renders taste guidance source');
   assert.ok(/Layout directives/.test(professionalGuidanceMarkdown), 'professional UI guidance markdown preserves layout directives');
@@ -462,7 +473,8 @@ async function runChecks(options = {}) {
   assert.ok(/QA focus/.test(professionalGuidanceMarkdown), 'professional UI guidance markdown preserves QA focus');
   assert.ok(/Clone boundary/.test(professionalGuidanceMarkdown), 'professional UI guidance markdown preserves clone boundary');
   assert.ok(/Professional visual system|Professional guidance source|Design DNA Style Pack/.test(renderDesignProfileMarkdown(designProfile)), 'design profile markdown includes professional guidance and Design DNA fields');
-  for (const file of ['index.js', 'router.js', 'references.js', 'artifacts.js', 'skillGuidance.js', 'stylePacks.js']) {
+  assert.ok(/Motion Quality Gate|emilkowalski\/skills-local-distillation/.test(renderDesignProfileMarkdown(designProfile)), 'design profile markdown includes Motion Quality Gate fields');
+  for (const file of ['index.js', 'router.js', 'references.js', 'artifacts.js', 'skillGuidance.js', 'stylePacks.js', 'motionQuality.js']) {
     assert.ok(fs.existsSync(path.join(path.resolve(__dirname, '..'), 'src', 'design', file)), 'design module exists ' + file);
   }
   const workflowSource = fs.readFileSync(path.join(path.resolve(__dirname, '..'), 'src', 'agent', 'workflow.js'), 'utf8');
@@ -554,6 +566,8 @@ async function runChecks(options = {}) {
   assert.ok(supervisorDesignDimension && supervisorDesignDimension.evidence && supervisorDesignDimension.evidence.designProfile && supervisorDesignDimension.evidence.designProfile.stylePack, 'supervisor design review exposes style-pack evidence');
   assert.strictEqual(supervisorDesignDimension.evidence.designProfile.stylePack.id, supervisorDesignProfile.stylePackId, 'supervisor reads selected style pack from design profile');
   assert.strictEqual(supervisorDesignDimension.evidence.designProfile.stylePack.validation.ok, true, 'supervisor validates style pack schema');
+  assert.ok(supervisorDesignDimension.evidence.designProfile.professionalGuidance.motionQualityGate, 'supervisor exposes motion quality gate evidence');
+  assert.ok(supervisorDesignDimension.evidence.designProfile.professionalGuidance.motionReview && supervisorDesignDimension.evidence.designProfile.professionalGuidance.motionReview.version === MOTION_QUALITY_VERSION, 'supervisor runs motion quality review');
   assert.ok(Array.isArray(supervisorReview.topIssues), 'supervisor review includes topIssues');
   assert.ok(/Revision Instructions|修整|Must fix|Should improve|Nice to have/.test(fs.readFileSync(supervisorResult.revisionPrompt, 'utf8')), 'supervisor revision prompt has priority-grouped instructions');
 

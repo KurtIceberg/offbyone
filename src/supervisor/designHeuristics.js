@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { validateStylePack } = require('../design/stylePacks');
+const { inspectMotionSourceText } = require('../design/motionQuality');
 
 function readDesignProfile(context) {
   if (context && context.designProfile) return context.designProfile;
@@ -133,6 +134,7 @@ function reviewDesignProfessionalism(context) {
   const stylePackSignalHits = stylePackQaSignals.filter((signal) => focusAppears(generatedText, signal));
   const missingStylePackSignals = stylePackQaSignals.filter((signal) => !stylePackSignalHits.includes(signal));
   const antiPatternsDetected = antiPatternHits(generatedText, designProfile);
+  const motionReview = inspectMotionSourceText(generatedText);
   const issues = [];
   const recommendations = [];
   let score = 100;
@@ -151,6 +153,11 @@ function reviewDesignProfessionalism(context) {
       score -= Math.min(18, antiPatternsDetected.length * 6);
       issues.push('Design profile anti-pattern terms detected: ' + antiPatternsDetected.join('; ') + '.');
       recommendations.push('Remove or rework anti-patterns listed in `.agent/design/design-profile.md`.');
+    }
+    if (motionReview.findings.length) {
+      score -= Math.min(20, motionReview.scorePenalty || motionReview.findings.length * 4);
+      issues.push('Interaction/motion quality red flags detected: ' + motionReview.findings.slice(0, 3).map((item) => item.label).join('; ') + '.');
+      recommendations.push('Apply the Motion Quality Gate from professional guidance: purposeful motion, transform/opacity only, strong ease-out, sub-300ms routine UI, trigger-aware origin, and reduced-motion handling.');
     }
     if (guidanceFocus.length && !guidanceHits.length) {
       score -= 8;
@@ -197,7 +204,15 @@ function reviewDesignProfessionalism(context) {
         professionalGuidance: designProfile.professionalGuidance ? {
           sourceSkill: designProfile.professionalGuidance.sourceSkill,
           qaFocus: guidanceFocus,
-          qaFocusHits: guidanceHits
+          qaFocusHits: guidanceHits,
+          motionQualityGate: designProfile.professionalGuidance.motionQualityGate ? {
+            source: designProfile.professionalGuidance.motionQualityGate.source,
+            version: designProfile.professionalGuidance.motionQualityGate.version,
+            intensity: designProfile.professionalGuidance.motionQualityGate.intensity,
+            qaSignals: designProfile.professionalGuidance.motionQualityGate.qaSignals,
+            redFlags: designProfile.professionalGuidance.motionQualityGate.redFlags
+          } : null,
+          motionReview
         } : null,
         stylePack: stylePack ? {
           id: stylePack.id,

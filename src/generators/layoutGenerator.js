@@ -72,6 +72,7 @@ function compactProfessionalGuidance(value) {
       parsed.artifactType ? '- Artifact type: `' + parsed.artifactType + '`' : '',
       parsed.businessGoal ? '- Business goal: ' + parsed.businessGoal : '',
       parsed.visualSystem ? '- Visual system: ' + parsed.visualSystem : '',
+      parsed.motionQualityGate ? '- Motion quality: ' + compactMotionGate(parsed.motionQualityGate, 420) : '',
       Array.isArray(parsed.layoutDirectives) ? '## Layout directives\n' + parsed.layoutDirectives.slice(0, 3).map((item) => '- ' + item).join('\n') : '',
       Array.isArray(parsed.componentDirectives) ? '## Component directives\n' + parsed.componentDirectives.slice(0, 2).map((item) => '- ' + item).join('\n') : '',
       Array.isArray(parsed.qaFocus) ? '- QA focus: ' + parsed.qaFocus.slice(0, 5).join(', ') : ''
@@ -79,6 +80,13 @@ function compactProfessionalGuidance(value) {
     return compactText(lines, MAX_LAYOUT_GUIDANCE_CHARS);
   }
   return compactText(value, MAX_LAYOUT_GUIDANCE_CHARS);
+}
+
+function compactMotionGate(gate = {}, maxChars = 420) {
+  const directives = Array.isArray(gate.generationDirectives) ? gate.generationDirectives.slice(0, 4).join(' / ') : '';
+  const redFlags = Array.isArray(gate.redFlags) ? gate.redFlags.slice(0, 4).join(', ') : '';
+  const tokens = gate.tokens && gate.tokens.easing ? 'ease-out ' + gate.tokens.easing.uiEaseOut + ', ease-in-out ' + gate.tokens.easing.uiEaseInOut : '';
+  return compactText([gate.source, gate.intensity, tokens, directives, redFlags ? 'Avoid: ' + redFlags : ''].filter(Boolean).join(' | '), maxChars);
 }
 
 function parseMaybeJson(value) {

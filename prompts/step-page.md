@@ -27,7 +27,7 @@
 - Anti-slop layout rule: do not use the default left-text/right-image hero unless the brief makes it clearly strongest; prefer centered over image, image-as-canvas, bottom-left editorial, product/workflow canvas, stacked proof strip, off-grid editorial, or inverted split when more fitting.
 - Anti-slop visual rule: avoid Inter-everywhere/template smell, generic purple-blue AI gradients, random icon grids, meaningless "Visual" cards, decorative blobs, orphan labels, and off-topic stock imagery.
 - Typography/spacing rule: display headings need intentional scale, weight, tracking, and balanced line length; sections need cinematic but useful whitespace, not cramped cards or empty brochure gaps.
-- Motion rule: use motion only for hierarchy, reveal, product flow, or section transition; never for decorative noise.
+- Motion rule: use motion only for hierarchy, reveal, product flow, or section transition; routine UI must feel instant and purposeful. Avoid `transition-all`, `ease-in` on UI, `scale(0)` entrances, layout-property animation, center-origin popovers, and motion without reduced-motion fallback.
 - 成品纯净度：客户可见预览必须像正式上线网站，不得出现脚手架、调试、接口、空数据或通用占位痕迹。
 
 ## 强制要求

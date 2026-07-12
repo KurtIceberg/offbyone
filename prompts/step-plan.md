@@ -97,7 +97,7 @@ Follow this profile before making layout decisions. The reference family ({desig
 ## Professional UI Guidance
 {professional_design_guidance_markdown}
 
-Use this guidance as the concrete design-system routing layer. Make the plan prove artifact type, audience, business goal, reference vocabulary, layout pattern, visual system, and QA focus before writing page/module plans.
+Use this guidance as the concrete design-system routing layer. Make the plan prove artifact type, audience, business goal, reference vocabulary, layout pattern, visual system, interaction/motion quality gate, and QA focus before writing page/module plans.
 
 ## Industry Expectation Playbook
 {industry_playbook_markdown}
