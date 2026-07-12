@@ -155,6 +155,7 @@ function buildRecoveryPagePrompt(variables = {}) {
     '- Keep under 120 lines. Use local arrays/state only. Include all requested domain modules visibly.',
     '- Follow the industry playbook for page role, conversion path, product/sales/support modules, and category-specific reassurance.',
     '- Customer preview must be clean: no API/debug/provider/scaffold/localhost/OffByOne/helper names, no placeholder states.',
+    '- Motion quality gate: purposeful motion only; no transition-all, ease-in UI timing, scale(0)/scale-0/zoom-in-0 entrances, layout-property transitions, or >300ms routine UI; include reduced-motion handling when movement is present.',
     '- Use local visuals when the page needs imagery: import { visualAsset, visualGallery } from "../lib/visualAssets.js"; render real <img> tags with src={asset.src || asset.url} and meaningful alt text.',
     '- Do not invent external stock image URLs. Use 1 hero image plus 2-4 supporting local images for product, catalog, retail, gallery, brand, food, travel, fitness, portfolio, and service pages.',
     '- Do not import `../lib/api`; translate API intent into local static content and optimistic form state.',

@@ -20,6 +20,7 @@ const { inferCommercialReadinessCaseDef } = require('../src/supervisor/commercia
 const { evaluatePromptAlignmentText, inferPromptExpectations } = require('../src/agent/promptAlignment');
 const { evaluateVisualExpectationDom, requiresRasterImagery } = require('../src/agent/visualCheck');
 const { summarizeOutputs, renderMarkdown: renderOutputsGovernanceMarkdown } = require('./outputs-governance');
+const { readGeneratedProject } = require('../src/supervisor/projectReader');
 
 function readFixture(name) {
   return fs.readFileSync(path.resolve(__dirname, '..', 'fixtures', name), 'utf8');
@@ -456,6 +457,26 @@ async function runChecks(options = {}) {
   assert.ok(badMotionReview.findings.some((item) => item.id === 'transition_all'), 'motion review flags transition-all');
   assert.ok(badMotionReview.findings.some((item) => item.id === 'ease_in_ui'), 'motion review flags ease-in UI timing');
   assert.ok(badMotionReview.findings.some((item) => item.id === 'scale_zero'), 'motion review flags scale(0) entrances');
+  const tailwindMotionReview = inspectMotionSourceText('className="scale-y-0 transition-[max-height] duration-[750ms]"');
+  assert.ok(tailwindMotionReview.findings.some((item) => item.id === 'scale_zero'), 'motion review flags Tailwind axis scale-zero entrances');
+  assert.ok(tailwindMotionReview.findings.some((item) => item.id === 'layout_property_motion'), 'motion review flags Tailwind arbitrary layout transitions');
+  assert.ok(tailwindMotionReview.findings.some((item) => item.id === 'slow_routine_ui'), 'motion review flags Tailwind arbitrary slow durations');
+  const zoomMotionReview = inspectMotionSourceText('className="motion-reduce:transform-none animate-in zoom-in-0"');
+  assert.ok(zoomMotionReview.findings.some((item) => item.id === 'scale_zero'), 'motion review flags zoom-in-0 entrances');
+  const recoveryPagePrompt = buildRecoveryPagePrompt({ page_component_name: 'Home', page_file_name: 'Home.jsx', page_business_brief: 'Premium customer page' });
+  assert.ok(/Motion quality gate|transition-all|ease-in|scale\(0\)|reduced-motion/i.test(recoveryPagePrompt), 'page recovery prompt carries motion quality hard rule');
+  const motionRecoveryLayoutPrompt = buildRecoveryLayoutPrompt({ layout_brief: 'Premium customer layout' });
+  assert.ok(/Motion quality gate|transition-all|ease-in|scale\(0\)|reduced-motion/i.test(motionRecoveryLayoutPrompt), 'layout recovery prompt carries motion quality hard rule');
+  const motionReaderRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'offbyone-motion-reader-'));
+  fs.mkdirSync(path.join(motionReaderRoot, 'src', 'components', 'marketing'), { recursive: true });
+  fs.mkdirSync(path.join(motionReaderRoot, 'src', 'styles'), { recursive: true });
+  fs.writeFileSync(path.join(motionReaderRoot, 'src', 'components', 'marketing', 'HeroCard.jsx'), 'export default function HeroCard(){return <div className="scale-y-0">Hero</div>}');
+  fs.writeFileSync(path.join(motionReaderRoot, 'src', 'styles', 'theme.css'), '.menu{transition: all 500ms ease-in;}');
+  const motionReaderProject = readGeneratedProject(motionReaderRoot);
+  const motionReaderPaths = motionReaderProject.sourceFiles.map((file) => file.path);
+  assert.ok(motionReaderPaths.includes('src/components/marketing/HeroCard.jsx'), 'supervisor reader scans nested customer components');
+  assert.ok(motionReaderPaths.includes('src/styles/theme.css'), 'supervisor reader scans customer CSS files');
+  fs.rmSync(motionReaderRoot, { recursive: true, force: true });
   assert.ok(/Reading this as:/.test(designProfile.professionalGuidance.designRead), 'taste guidance includes a design read');
   assert.deepStrictEqual(designProfile.professionalGuidance.tasteDials, { variance: 'high', motion: 'medium', density: 'low-medium' }, 'premium consumer taste dials are deterministic');
   assert.ok(designProfile.professionalGuidance.compositionAlternatives.some((item) => /image-as-canvas|bottom-left/i.test(item)), 'taste guidance suggests non-default hero compositions');
@@ -2008,6 +2029,26 @@ async function runChecks(options = {}) {
     oracleBrief: createOracleBrief('Build a B2B SaaS platform landing page for workflow automation, dashboards, CRM integrations, analytics, and request demo CTA.'),
     qualityReport: { ok: true, score: 92, grade: 'A' }
   });
+  const readyProductSupervisor = () => ({
+    ok: true,
+    summary: 'Product Design Supervisor score: 95/100 grade=A status=ready',
+    reviewJson: '',
+    reviewMarkdown: '',
+    review: {
+      version: 'offbyone-supervisor-v1',
+      score: 95,
+      grade: 'A',
+      status: 'ready',
+      dimensions: [{
+        id: 'design_professionalism',
+        score: 96,
+        severity: 'low',
+        issues: [],
+        evidence: { motionReview: { passed: true, findings: [], redFlagCount: 0, scorePenalty: 0 } }
+      }],
+      topIssues: []
+    }
+  });
   const projectDoctorPromise = runProjectDoctor(doctorRoot, {
     install: true,
     backendPort: 4111,
@@ -2069,7 +2110,8 @@ async function runChecks(options = {}) {
         fs.writeFileSync(reportJson, JSON.stringify(report));
         fs.writeFileSync(reportMarkdown, '# Deploy\n');
         return { ok: true, code: 0, summary: 'stub deploy ok', report, reportJson, reportMarkdown };
-      }
+      },
+      productDesignSupervisor: readyProductSupervisor
     }
   }).then((doctor) => {
     assert.strictEqual(doctor.ok, true, 'project-doctor passes when acceptance/deploy/readiness pass');
@@ -2080,6 +2122,10 @@ async function runChecks(options = {}) {
     const doctorJson = JSON.parse(fs.readFileSync(path.join(doctorRoot, '.agent', 'project-doctor', 'report.json'), 'utf8'));
     const doctorMd = fs.readFileSync(path.join(doctorRoot, '.agent', 'project-doctor', 'report.md'), 'utf8');
     assert.strictEqual(doctorJson.releaseGate.status, 'pass', 'project-doctor JSON release gate pass');
+    assert.strictEqual(doctorJson.releaseGate.productQualityOk, true, 'project-doctor release gate requires product quality pass');
+    assert.strictEqual(doctorJson.releaseGate.motionQualityOk, true, 'project-doctor release gate requires motion quality pass');
+    assert.strictEqual(doctorJson.productQuality.status, 'pass', 'project-doctor records product quality gate pass');
+    assert.strictEqual(doctorJson.productQuality.motionGate.status, 'pass', 'project-doctor records motion quality gate pass');
     assert.strictEqual(doctorJson.readinessScore, 92, 'project-doctor JSON records deploy readiness score');
     assert.strictEqual(doctorJson.grade, 'A', 'project-doctor JSON records deploy grade');
     assert.ok(doctorJson.stages.some((stage) => stage.name === 'validate' && stage.group === 'acceptance-check'), 'project-doctor expands acceptance sub-stages');
@@ -2105,7 +2151,8 @@ async function runChecks(options = {}) {
     _runners: {
       acceptanceCheck: async () => ({ ok: true, code: 0, summary: 'acceptance ok', report: { ok: true, status: 'pass', stages: [] } }),
       deliveryPackage: () => ({ ok: true, code: 0, summary: 'delivery ok', manifest: {} }),
-      deployCheck: () => ({ ok: true, code: 0, summary: 'deploy ok but low readiness', report: { ok: true, status: 'pass', readinessScore: 89, grade: 'B', readiness: { score: 89, grade: 'B', warnings: ['low'] }, warnings: ['low'], failures: [] } })
+      deployCheck: () => ({ ok: true, code: 0, summary: 'deploy ok but low readiness', report: { ok: true, status: 'pass', readinessScore: 89, grade: 'B', readiness: { score: 89, grade: 'B', warnings: ['low'] }, warnings: ['low'], failures: [] } }),
+      productDesignSupervisor: readyProductSupervisor
     }
   }).then((doctor) => {
     assert.strictEqual(doctor.ok, false, 'project-doctor fails release gate below readiness threshold');
@@ -2114,7 +2161,47 @@ async function runChecks(options = {}) {
     assert.ok(doctor.report.releaseGate.reasons.some((reason) => reason.includes('below 90')), 'project-doctor explains readiness threshold failure');
   });
 
-  return Promise.all([homeMockPagePromise, leadMockPagePromise, petMockPlanPromise, petMockLayoutPromise, petMockPagePromise, acceptancePromise, projectDoctorPromise, projectDoctorFailPromise]).then(([homeMockPage, leadMockPage, petMockPlan, petMockLayout, petMockPage]) => {
+  const doctorMotionFailRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'offbyone-project-doctor-motion-fail-'));
+  const projectDoctorMotionFailPromise = runProjectDoctor(doctorMotionFailRoot, {
+    _runners: {
+      acceptanceCheck: async () => ({ ok: true, code: 0, summary: 'acceptance ok', report: { ok: true, status: 'pass', stages: [] } }),
+      deliveryPackage: () => ({ ok: true, code: 0, summary: 'delivery ok', manifest: {} }),
+      deployCheck: () => ({ ok: true, code: 0, summary: 'deploy ok', report: { ok: true, status: 'pass', readinessScore: 96, grade: 'A', readiness: { score: 96, grade: 'A', warnings: [] }, warnings: [], failures: [] } }),
+      productDesignSupervisor: () => ({
+        ok: true,
+        summary: 'Product Design Supervisor score: 95/100 grade=A status=ready',
+        review: {
+          version: 'offbyone-supervisor-v1',
+          score: 95,
+          grade: 'A',
+          status: 'ready',
+          dimensions: [{
+            id: 'design_professionalism',
+            score: 92,
+            severity: 'low',
+            issues: ['Interaction/motion quality red flags detected.'],
+            evidence: {
+              motionReview: {
+                passed: false,
+                redFlagCount: 1,
+                scorePenalty: 8,
+                findings: [{ id: 'transition_all', severity: 'high', label: 'Unbounded transition detected', evidence: 'transition-all', recommendation: 'Specify exact transform/opacity/color properties instead of transition-all.' }]
+              }
+            }
+          }],
+          topIssues: []
+        }
+      })
+    }
+  }).then((doctor) => {
+    assert.strictEqual(doctor.ok, false, 'project-doctor fails when Motion Quality Gate has findings');
+    assert.strictEqual(doctor.code, 1, 'project-doctor returns non-zero code on motion quality failure');
+    assert.strictEqual(doctor.report.releaseGate.motionQualityOk, false, 'release gate exposes motion quality failure');
+    assert.ok(doctor.report.releaseGate.reasons.some((reason) => /motion quality gate/i.test(reason)), 'release gate explains motion quality failure');
+    assert.ok(doctor.report.productDoctorV2.releaseBlockers.some((reason) => /Motion Quality Gate/i.test(reason)), 'Product Doctor v2 lists motion gate blocker');
+  });
+
+  return Promise.all([homeMockPagePromise, leadMockPagePromise, petMockPlanPromise, petMockLayoutPromise, petMockPagePromise, acceptancePromise, projectDoctorPromise, projectDoctorFailPromise, projectDoctorMotionFailPromise]).then(([homeMockPage, leadMockPage, petMockPlan, petMockLayout, petMockPage]) => {
     assert.ok(!homeMockPage.includes("from '../lib/api'"), 'mock customer page keeps internal API helpers hidden');
     assert.ok(homeMockPage.includes('Project highlights') && homeMockPage.includes('Featured offerings') && homeMockPage.includes('Proof points'), 'mock page renders customer-facing business sections for planned API reads');
     assert.ok(leadMockPage.includes('onSubmit={handleSubmit}') && leadMockPage.includes('type="submit"'), 'mock page output renders a visible lead form when planned');

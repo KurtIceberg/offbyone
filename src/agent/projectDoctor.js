@@ -4,8 +4,10 @@ const { runAcceptanceCheck } = require('./acceptanceCheck');
 const { createDeliveryPackage } = require('./deliveryPackage');
 const { runDeployCheck } = require('./deployCheck');
 const { refreshQualityContract } = require('../organism/qualityContract');
+const { runProductDesignSupervisor } = require('../supervisor');
 
 const RELEASE_GATE_SCORE = 90;
+const PRODUCT_QUALITY_GATE_SCORE = 85;
 
 async function runProjectDoctor(output, options = {}) {
   if (!output) throw new Error('output is required');
@@ -27,6 +29,15 @@ async function runProjectDoctor(output, options = {}) {
     acceptance: { ok: false, status: 'not-run' },
     delivery: { ok: false, status: 'not-run' },
     deploy: { ok: false, status: 'not-run', readinessScore: 0, grade: 'F' },
+    productQuality: {
+      ok: false,
+      status: 'not-run',
+      threshold: PRODUCT_QUALITY_GATE_SCORE,
+      score: 0,
+      grade: 'F',
+      reviewStatus: 'not-run',
+      motionGate: { ok: false, status: 'not-run', findings: [] }
+    },
     readinessScore: 0,
     grade: 'F',
     releaseGate: {
@@ -74,6 +85,18 @@ async function runProjectDoctor(output, options = {}) {
     return runner(root, {});
   });
   collectDeploy(report, deployResult);
+
+  const productQualityResult = await runDoctorStage(report, 'product-design-supervisor', async () => {
+    const runner = runners.productDesignSupervisor || runProductDesignSupervisor;
+    const result = await runner({ output: root, caseDef: options.caseDef });
+    const gate = evaluateProductQualityGate(result);
+    return Object.assign({}, result, {
+      ok: gate.ok,
+      status: gate.status,
+      summary: (result && result.summary ? result.summary + ' | ' : '') + gate.summary
+    });
+  });
+  collectProductQuality(report, productQualityResult);
 
   const qualityContractRefresh = maybeRefreshQualityContract(root);
   report.qualityContract = compactQualityContractRefresh(qualityContractRefresh);
@@ -207,23 +230,102 @@ function collectDeploy(report, result) {
   report.artifacts.deployReportMarkdown = report.deploy.reportMarkdown;
 }
 
+function collectProductQuality(report, result) {
+  const gate = evaluateProductQualityGate(result);
+  const review = result && result.review ? result.review : {};
+  report.productQuality = {
+    ok: gate.ok,
+    status: gate.status,
+    threshold: PRODUCT_QUALITY_GATE_SCORE,
+    score: gate.score,
+    grade: gate.grade,
+    reviewStatus: gate.reviewStatus,
+    summary: gate.summary,
+    reviewJson: result && result.reviewJson || '',
+    reviewMarkdown: result && result.reviewMarkdown || '',
+    commercialReadinessJson: result && result.commercialReadinessJson || '',
+    commercialReadinessMarkdown: result && result.commercialReadinessMarkdown || '',
+    topIssues: Array.isArray(review.topIssues) ? review.topIssues.slice(0, 5) : [],
+    motionGate: gate.motionGate
+  };
+  report.artifacts.supervisorReviewJson = report.productQuality.reviewJson;
+  report.artifacts.supervisorReviewMarkdown = report.productQuality.reviewMarkdown;
+  report.artifacts.commercialReadinessJson = report.productQuality.commercialReadinessJson;
+  report.artifacts.commercialReadinessMarkdown = report.productQuality.commercialReadinessMarkdown;
+}
+
+function evaluateProductQualityGate(result) {
+  const review = result && result.review ? result.review : {};
+  const score = Number(review.score) || 0;
+  const grade = review.grade || 'F';
+  const reviewStatus = review.status || 'missing-review';
+  const motionReview = extractMotionReview(review);
+  const motionFindings = Array.isArray(motionReview.findings) ? motionReview.findings : [];
+  const motionOk = motionFindings.length === 0 && motionReview.passed !== false;
+  const motionGate = {
+    ok: motionOk,
+    status: motionOk ? 'pass' : 'fail',
+    version: motionReview.version || '',
+    source: motionReview.source || '',
+    redFlagCount: typeof motionReview.redFlagCount === 'number' ? motionReview.redFlagCount : motionFindings.length,
+    scorePenalty: Number(motionReview.scorePenalty) || 0,
+    findings: motionFindings.slice(0, 12)
+  };
+  const qualityOk = Boolean(review && review.version) && score >= PRODUCT_QUALITY_GATE_SCORE && reviewStatus === 'ready';
+  const ok = qualityOk && motionGate.ok;
+  const reasons = [];
+  if (!review || !review.version) reasons.push('product review is missing');
+  else {
+    if (score < PRODUCT_QUALITY_GATE_SCORE) reasons.push('product supervisor score ' + score + ' is below ' + PRODUCT_QUALITY_GATE_SCORE);
+    if (reviewStatus !== 'ready') reasons.push('product supervisor status is ' + reviewStatus);
+  }
+  if (!motionGate.ok) reasons.push('motion quality gate found ' + motionGate.redFlagCount + ' issue(s)' + (motionFindings.length ? ': ' + motionFindings.map((item) => item.id || item.label).slice(0, 4).join(', ') : ''));
+  return {
+    ok,
+    status: ok ? 'pass' : 'fail',
+    score,
+    grade,
+    reviewStatus,
+    motionGate,
+    reasons,
+    summary: ok ? 'Product quality gate PASS — supervisor ready and motion gate clean.' : 'Product quality gate FAIL — ' + reasons.join('; ')
+  };
+}
+
+function extractMotionReview(review) {
+  const dimensions = Array.isArray(review && review.dimensions) ? review.dimensions : [];
+  const design = dimensions.find((dimension) => dimension && dimension.id === 'design_professionalism') || {};
+  const evidence = design.evidence || {};
+  if (evidence.motionReview) return evidence.motionReview;
+  const professional = evidence.designProfile && evidence.designProfile.professionalGuidance;
+  if (professional && professional.motionReview) return professional.motionReview;
+  return { passed: true, findings: [], redFlagCount: 0, scorePenalty: 0 };
+}
+
 function finalizeProjectDoctor(report) {
   const reasons = [];
   if (!report.acceptance.ok) reasons.push('acceptance-check did not pass');
   if (!report.deploy.ok) reasons.push('deploy-check did not pass');
   if (report.readinessScore < RELEASE_GATE_SCORE) reasons.push('deploy readiness score ' + report.readinessScore + ' is below ' + RELEASE_GATE_SCORE);
+  if (!report.productQuality.ok) reasons.push('product quality gate did not pass');
+  const motionGate = report.productQuality && report.productQuality.motionGate;
+  if (motionGate && !motionGate.ok) reasons.push('motion quality gate found ' + (motionGate.redFlagCount || (motionGate.findings || []).length) + ' issue(s)');
   report.releaseGate = {
     status: reasons.length ? 'fail' : 'pass',
     threshold: RELEASE_GATE_SCORE,
+    productQualityThreshold: PRODUCT_QUALITY_GATE_SCORE,
     acceptanceOk: Boolean(report.acceptance.ok),
     deployOk: Boolean(report.deploy.ok),
+    productQualityOk: Boolean(report.productQuality.ok),
+    motionQualityOk: Boolean(motionGate && motionGate.ok),
     readinessScore: report.readinessScore,
+    productQualityScore: report.productQuality.score,
     grade: report.grade,
     reasons
   };
   report.ok = report.releaseGate.status === 'pass';
   report.status = report.ok ? 'pass' : 'fail';
-  report.summary = 'Project doctor ' + report.status.toUpperCase() + ' — release gate ' + report.releaseGate.status.toUpperCase() + ', readiness ' + report.grade + ' (' + report.readinessScore + '/100)';
+  report.summary = 'Project doctor ' + report.status.toUpperCase() + ' — release gate ' + report.releaseGate.status.toUpperCase() + ', readiness ' + report.grade + ' (' + report.readinessScore + '/100), product quality ' + (report.productQuality.grade || 'F') + ' (' + (report.productQuality.score || 0) + '/100)';
 }
 
 function compactQualityContractRefresh(refresh) {
@@ -251,7 +353,14 @@ function createProductDoctorV2(report) {
   if (!report.acceptance.ok) blockers.push('Acceptance gate did not pass; generated site is not safely previewable/deliverable.');
   if (!report.deploy.ok) blockers.push('Deploy readiness gate did not pass; handoff/deploy evidence is incomplete.');
   if ((report.readinessScore || 0) < RELEASE_GATE_SCORE) blockers.push('Readiness score is below release threshold.');
+  if (report.productQuality && !report.productQuality.ok) blockers.push('Product quality gate did not pass; supervisor status=' + (report.productQuality.reviewStatus || 'unknown') + ', score=' + (report.productQuality.score || 0) + '/100.');
+  const motionGate = report.productQuality && report.productQuality.motionGate;
+  if (motionGate && !motionGate.ok) blockers.push('Motion Quality Gate found ' + (motionGate.redFlagCount || (motionGate.findings || []).length) + ' interaction issue(s).');
   for (const issue of collectPromptAlignmentIssues(report)) priorityIssues.push(issue);
+  for (const finding of (motionGate && motionGate.findings) || []) {
+    priorityIssues.push(productIssue('p0', 'motion_quality_gate', (finding.id || finding.label || 'motion issue') + ': ' + (finding.evidence || finding.label || ''), finding.recommendation || 'Remove motion anti-patterns, keep routine UI under 300ms, and add reduced-motion handling.'));
+  }
+  for (const issue of (report.productQuality && report.productQuality.topIssues) || []) priorityIssues.push(productIssue('p1', 'product_quality', issue.message || issue.id || 'Product quality issue', issue.recommendedAction || 'Fix the product quality issue and rerun project-doctor.'));
   for (const reason of (report.releaseGate && report.releaseGate.reasons) || []) priorityIssues.push(productIssue('p0', 'release_gate', reason, 'Fix the failing release-gate condition, then rerun project-doctor.'));
   for (const warning of (report.deploy && report.deploy.warnings) || []) priorityIssues.push(productIssue('p2', 'delivery_readiness', warning, 'Resolve or document the deploy/readiness warning before client handoff.'));
   if (contract && !contract.publishReady) priorityIssues.push(productIssue('p1', 'quality_contract', 'Quality Contract is not a publish candidate: ' + (contract.decision || 'unknown') + '.', 'Run product review/refine or add missing acceptance/commercial evidence until the contract is publish-ready.'));
@@ -276,6 +385,11 @@ function createProductDoctorV2(report) {
       acceptance: report.acceptance.status || 'unknown',
       readinessScore: report.readinessScore || 0,
       readinessGrade: report.grade || 'F',
+      productQualityStatus: report.productQuality && report.productQuality.status || 'unknown',
+      productQualityScore: report.productQuality && report.productQuality.score || 0,
+      productQualityGrade: report.productQuality && report.productQuality.grade || 'F',
+      motionQualityStatus: report.productQuality && report.productQuality.motionGate && report.productQuality.motionGate.status || 'unknown',
+      motionRedFlagCount: report.productQuality && report.productQuality.motionGate && report.productQuality.motionGate.redFlagCount || 0,
       qualityContractDecision: contract && contract.decision || 'not-available',
       publishReady: Boolean(contract && contract.publishReady)
     }
@@ -415,8 +529,12 @@ function renderProjectDoctorMarkdown(report) {
   lines.push('## Release gate');
   lines.push('- Acceptance OK: ' + yesNo(report.releaseGate.acceptanceOk));
   lines.push('- Deploy-check OK: ' + yesNo(report.releaseGate.deployOk));
+  lines.push('- Product quality OK: ' + yesNo(report.releaseGate.productQualityOk));
+  lines.push('- Motion quality OK: ' + yesNo(report.releaseGate.motionQualityOk));
   lines.push('- Readiness threshold: ' + report.releaseGate.threshold + '/100');
   lines.push('- Readiness score: ' + report.releaseGate.readinessScore + '/100');
+  lines.push('- Product quality threshold: ' + (report.releaseGate.productQualityThreshold || PRODUCT_QUALITY_GATE_SCORE) + '/100');
+  lines.push('- Product quality score: ' + (report.releaseGate.productQualityScore || 0) + '/100');
   if (report.releaseGate.reasons && report.releaseGate.reasons.length) {
     lines.push('- Blocking reasons:');
     for (const reason of report.releaseGate.reasons) lines.push('  - ' + reason);
@@ -469,7 +587,7 @@ function renderProjectDoctorMarkdown(report) {
 function collectResultArtifacts(value) {
   const report = value && value.report ? value.report : {};
   const out = {};
-  for (const key of ['reportJson', 'reportMarkdown', 'manifestPath', 'readmePath', 'deliveryDir']) {
+  for (const key of ['reportJson', 'reportMarkdown', 'reviewJson', 'reviewMarkdown', 'commercialReadinessJson', 'commercialReadinessMarkdown', 'manifestPath', 'readmePath', 'deliveryDir']) {
     if (value && value[key]) out[key] = value[key];
     else if (report && report[key]) out[key] = report[key];
   }

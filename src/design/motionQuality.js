@@ -110,16 +110,16 @@ function inspectMotionSourceText(text) {
     addFinding(findings, 'ease_in_ui', 'high', 'ease-in timing detected', 'ease-in', 'Use strong ease-out for enter/exit UI feedback; reserve ease-in-out for on-screen movement.', 8);
   }
 
-  if (/scale\s*\(\s*0(?:\.0+)?\s*\)|\bscale-\[?0\]?\b|scale\s*:\s*0(?!\.)/i.test(source)) {
-    addFinding(findings, 'scale_zero', 'high', 'scale(0) entrance detected', 'scale(0) / scale-0', 'Start from scale(0.9-0.97) with opacity: 0 so elements do not appear from nowhere.', 8);
+  if (/scale\s*\(\s*0(?:\.0+)?\s*\)|\b(?:scale|scale-x|scale-y)-\[?0\]?\b|\b(?:zoom-in|zoom-out)-0\b|scale\s*:\s*0(?!\.)/i.test(source)) {
+    addFinding(findings, 'scale_zero', 'high', 'scale(0) entrance detected', 'scale(0) / scale-0 / scale-axis-0 / zoom-in-0', 'Start from scale(0.9-0.97) with opacity: 0 so elements do not appear from nowhere.', 8);
   }
 
-  if (/\bduration-(?:[4-9]\d{2}|\[(?:[4-9]\d{2}|[1-9]\d{3,})ms\])\b|duration\s*:\s*(?:[4-9]\d{2}|[1-9]\d{3,})ms/i.test(source)) {
+  if (/\bduration-(?:[4-9]\d{2}|\[(?:[4-9]\d{2}|[1-9]\d{3,})ms\]|\[(?:0?\.[4-9]|[1-9](?:\.\d+)?)s\])(?=$|[^a-z0-9_-])|duration\s*:\s*(?:(?:[4-9]\d{2}|[1-9]\d{3,})ms|(?:0?\.[4-9]|[1-9](?:\.\d+)?)s)/i.test(source)) {
     addFinding(findings, 'slow_routine_ui', 'medium', 'Routine UI duration appears over 300ms', 'duration > 300ms', 'Keep routine UI under 300ms unless it is a rare marketing/explanatory sequence.', 5);
   }
 
-  if (/transition(?:-property)?\s*:\s*(height|width|margin|padding|top|left)|\btransition-\[?(height|width|margin|padding|top|left)\]?\b/i.test(source)) {
-    addFinding(findings, 'layout_property_motion', 'medium', 'Layout-property animation detected', 'height/width/margin/padding/top/left transition', 'Prefer transform/opacity or a measured non-janky pattern for motion-sensitive UI.', 5);
+  if (/transition(?:-property)?\s*:\s*(height|width|margin|padding|top|left|max-height|max-width)|\btransition-\[?(height|width|margin|padding|top|left|max-height|max-width)\]?\b/i.test(source)) {
+    addFinding(findings, 'layout_property_motion', 'medium', 'Layout-property animation detected', 'height/width/margin/padding/top/left/max-height/max-width transition', 'Prefer transform/opacity or a measured non-janky pattern for motion-sensitive UI.', 5);
   }
 
   const hasMovementMotion = /framer-motion|motion\.|whilehover|whiletap|initial=|animate=|@keyframes|animate-|transition-transform|transition\s*:[^;]*(transform|all)|\b(?:transform|scale|translate|rotate)-|transform\s*:/i.test(source);

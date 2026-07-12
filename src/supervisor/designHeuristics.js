@@ -142,6 +142,11 @@ function reviewDesignProfessionalism(context) {
   if (imageMatches.length < 2) { score -= 16; issues.push('Limited image/visual storytelling markers found.'); recommendations.push('Add product imagery, material/detail visuals, or lifestyle gallery markers.'); }
   if (genericMatches.length > 0) { score -= Math.min(24, genericMatches.length * 8); issues.push('Generic/template-like copy markers detected.'); recommendations.push('Replace generic claims with specific brand, product, material, proof, and user-scenario language.'); }
   if (variety < 5) { score -= 16; issues.push('Section/component variety appears low from source-level heuristics.'); recommendations.push('Mix hero, product cards, story/craft, proof, and final CTA rather than repeating one block pattern.'); }
+  if (motionReview.findings.length) {
+    score -= Math.min(20, motionReview.scorePenalty || motionReview.findings.length * 4);
+    issues.push('Interaction/motion quality red flags detected: ' + motionReview.findings.slice(0, 3).map((item) => item.label).join('; ') + '.');
+    recommendations.push('Apply the Motion Quality Gate from professional guidance: purposeful motion, transform/opacity only, strong ease-out, sub-300ms routine UI, trigger-aware origin, and reduced-motion handling.');
+  }
   if (designProfile) {
     const missingPenalty = Math.min(24, missingSignals.length * (designProfile.siteType === 'premium-consumer' ? 5 : 4));
     if (missingPenalty) {
@@ -153,11 +158,6 @@ function reviewDesignProfessionalism(context) {
       score -= Math.min(18, antiPatternsDetected.length * 6);
       issues.push('Design profile anti-pattern terms detected: ' + antiPatternsDetected.join('; ') + '.');
       recommendations.push('Remove or rework anti-patterns listed in `.agent/design/design-profile.md`.');
-    }
-    if (motionReview.findings.length) {
-      score -= Math.min(20, motionReview.scorePenalty || motionReview.findings.length * 4);
-      issues.push('Interaction/motion quality red flags detected: ' + motionReview.findings.slice(0, 3).map((item) => item.label).join('; ') + '.');
-      recommendations.push('Apply the Motion Quality Gate from professional guidance: purposeful motion, transform/opacity only, strong ease-out, sub-300ms routine UI, trigger-aware origin, and reduced-motion handling.');
     }
     if (guidanceFocus.length && !guidanceHits.length) {
       score -= 8;
@@ -194,6 +194,7 @@ function reviewDesignProfessionalism(context) {
       visualMarkers: imageMatches.length,
       genericMarkers: genericMatches.length,
       variety,
+      motionReview,
       designProfile: designProfile ? {
         siteType: designProfile.siteType,
         referenceFamily: designProfile.referenceFamily,

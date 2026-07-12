@@ -48,6 +48,10 @@ function isSourceFile(name) {
   return /\.(jsx|js|tsx|ts)$/.test(name || '');
 }
 
+function isReviewableSourceFile(name) {
+  return /\.(jsx|js|tsx|ts|css|module\.css)$/.test(name || '');
+}
+
 function pushTopLevelFiles(output, candidates, relDir, limit) {
   const absDir = safeInside(output, relDir);
   for (const name of listFiles(absDir, isSourceFile, limit || 30)) {
@@ -67,7 +71,7 @@ function pushNestedFiles(output, candidates, relDir, limit) {
       const childRel = path.join(rel, name);
       const stat = fs.statSync(childAbs);
       if (stat.isDirectory()) walk(childAbs, childRel);
-      else if (stat.isFile() && isSourceFile(name)) {
+      else if (stat.isFile() && isReviewableSourceFile(name)) {
         candidates.push(childRel);
         count += 1;
       }
@@ -97,10 +101,11 @@ function readGeneratedProject(outputDir) {
   const visualAssetPlan = readJsonIfExists(output, '.agent/assets/visual-assets-plan.json') || readJsonIfExists(output, '.agent/state/visual-assets-plan.json');
   const sourceFiles = [];
   const candidates = [];
-  for (const rel of ['src/App.jsx', 'src/main.jsx']) candidates.push(rel);
+  for (const rel of ['src/App.jsx', 'src/main.jsx', 'src/index.css', 'src/App.css', 'src/styles/theme.css']) candidates.push(rel);
   pushNestedFiles(output, candidates, 'src/layouts', 40);
-  pushTopLevelFiles(output, candidates, 'src/pages', 40);
-  pushTopLevelFiles(output, candidates, 'src/components', 30);
+  pushNestedFiles(output, candidates, 'src/pages', 60);
+  pushNestedFiles(output, candidates, 'src/components', 80);
+  pushNestedFiles(output, candidates, 'src/styles', 40);
   for (const rel of candidates) {
     if (!isCustomerFacingComponent(rel)) continue;
     const content = readTextIfExists(output, rel, 30000);
